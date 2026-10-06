@@ -23,6 +23,7 @@ export const etiquetas = {
         'regla.actualizada': 'Regla editada',
         'regla.eliminada': 'Regla borrada',
         'simulador.reinicio': 'Simulador reiniciado',
+        'demo.preparada': 'Datos de ejemplo cargados',
     },
 };
 

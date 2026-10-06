@@ -1,27 +1,51 @@
 # LUMICLASS
 
-Sistema inteligente de control y monitoreo de iluminación de un salón de clases.
+**Sistema inteligente de control y monitoreo de iluminación de un salón de clases.**
 
-Aplicación web que muestra si el salón está ocupado o vacío, controla las luces (manual o automático) y registra el historial, usando sensores y servomotores. Funciona primero con hardware simulado.
+LUMICLASS sabe si el salón está ocupado o vacío (sensores de presencia), enciende y apaga las luces moviendo el
+interruptor de pared con un servomotor, deja controlarlas a mano desde el celular o el computador, y registra todo:
+historial, alertas y estadísticas (incluidas las horas en que las luces quedaron encendidas **con el salón vacío**).
+Hoy funciona con **hardware simulado**; la integración con la placa real es la Fase 8.
 
 **Equipo:** Camilo, Marcos y Sofía.
 
-> ⚠️ **Seguridad eléctrica:** los servomotores **solo accionan el interruptor de pared de forma mecánica**. **Nunca** se conectan a la corriente de red (110/220 V). La placa y los servos usan su propia fuente de 5 V.
+> ⚠️ **Seguridad eléctrica:** los servomotores **solo accionan el interruptor de pared de forma mecánica** (con un
+> soporte impreso o de madera). **Nunca** se conectan a la corriente de red (110/220 V). La placa y los servos usan su
+> propia fuente de 5 V.
+
+| Celular | Computador |
+| ------- | ---------- |
+| <img src="docs/capturas/celular-inicio.png" width="230" alt="Inicio en el celular: salón ocupado, 2 de 4 luces encendidas"> | <img src="docs/capturas/escritorio-estadisticas.png" width="560" alt="Estadísticas: horas encendidas por día y horas con la zona vacía"> |
+| <img src="docs/capturas/celular-control.png" width="230" alt="Control de luces por zona y por luz"> | <img src="docs/capturas/escritorio-simulador.png" width="560" alt="Simulador de sensores y servos"> |
+
+## Qué hace
+
+- **Cuentas:** cada persona se registra y solo ve y controla **sus** salones (puede tener varios).
+- **Inicio:** ocupado / vacío, luces encendidas, sensores activos, alertas y estado de cada zona, actualizado cada 3 s.
+- **Control:** encender o apagar cada luz o una zona entera; modo **automático** o **manual** por zona.
+- **Reglas** editables: "si está ocupado → encender", "si está vacío durante 5 min → apagar", por zona o para todo el salón.
+- **Sensores:** conexión, presencia y última lectura.
+- **Historial** con filtros y descarga en CSV; **Estadísticas** de 1, 7 y 30 días.
+- **Simulador:** forzar presencia, dañar sensores, hacer fallar o demorar servos y simular el interruptor de pared.
+- **No se rompe** ante sensores o servos desconectados, servidor caído, datos inválidos, órdenes duplicadas ni
+  estados imposibles (ver [docs/PRUEBAS.md](docs/PRUEBAS.md)).
+
+Cada estado se distingue a simple vista con **color + ícono + texto**: amarillo encendida, gris apagada, verde ocupado,
+azul vacío, rojo falla, naranja desconocido.
 
 ## Requisitos
 
-- [PHP](https://www.php.net/) 8.3 o superior (probado con PHP 8.4 en Windows 11).
-- [Composer](https://getcomposer.org/) 2.
-- [Node.js](https://nodejs.org/) 20 o superior (solo para compilar CSS/JS con Vite).
-- Git.
+- [PHP](https://www.php.net/) 8.3 o superior (probado con PHP 8.4 en Windows 11) y [Composer](https://getcomposer.org/) 2.
+- [Node.js](https://nodejs.org/) 20 o superior (para compilar la interfaz).
+- Git. Opcional: MySQL (por ejemplo el de WAMP); si no, se usa SQLite, que no requiere instalar nada.
 
-## Instalación (Windows, macOS o Linux)
+## Instalación en Windows
 
 ```
 git clone https://github.com/MarcoXD23/LUMICLASS.git
 cd LUMICLASS
 composer install
-copy .env.example .env        # en macOS/Linux: cp .env.example .env
+copy .env.example .env
 php artisan key:generate
 php artisan migrate --seed
 npm install
@@ -29,107 +53,111 @@ npm run build
 php artisan serve --port=8001
 ```
 
-- Aplicación: http://localhost:8001 (entra con la cuenta demo de abajo o crea una cuenta)
-- API: http://localhost:8001/api/v1/salud
-- **Desde el celular** (misma red WiFi): `php artisan serve --host=0.0.0.0 --port=8001` y abre `http://IP-DEL-PC:8001` (la IP sale con `ipconfig`). Si Windows pregunta por el firewall, permite el acceso en redes privadas.
-
-`npm run build` compila la interfaz una vez. Si vas a cambiar vistas, CSS o JS, deja `npm run dev` corriendo en otra consola y los cambios se ven al instante.
-
-**Cuentas:** cada persona se registra y solo ve y controla **sus** salones (puede tener varios). `--seed` crea una cuenta de demostración:
+Abre **http://localhost:8001** y entra con la cuenta demo (o crea una cuenta):
 
 | Correo                | Contraseña  |
 | --------------------- | ----------- |
 | `demo@lumiclass.test` | `demo12345` |
 
-Es solo para desarrollo y presentación: cámbiala si el sistema se publica. Cada cuenta nueva recibe un salón de ejemplo (2 zonas, 4 luces con su servo, 2 sensores PIR y 2 reglas; cantidades **PROPUESTA**). Los endpoints y protecciones están en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md#5-endpoints-apiv1-confirmado).
+La cuenta demo es solo para desarrollo y presentación: cambia su contraseña si el sistema se publica. Cada cuenta nueva
+recibe un salón de ejemplo (2 zonas, 4 luces con su servo, 2 sensores PIR y 2 reglas; cantidades **PROPUESTA** hasta
+confirmar el salón real).
 
-Si ya tenías una base de una versión anterior, recréala con `php artisan migrate:fresh --seed` (**borra los datos** de la base configurada en `.env`: revisa `DB_DATABASE` antes).
+- **Desde el celular** (misma red WiFi): `php artisan serve --host=0.0.0.0 --port=8001` y abre `http://IP-DEL-PC:8001`
+  (la IP sale con `ipconfig`). Si Windows pregunta por el firewall, permite el acceso en redes privadas.
+- **Puerto 8001 y cookie `lumiclass_session`:** así LUMICLASS corre al mismo tiempo que otro proyecto Laravel
+  (que usa el 8000 y la cookie `laravel_session`) sin mezclar sesiones.
 
-**Base de datos:** por defecto SQLite (un archivo, nada que instalar). Para usar **MySQL de WAMP**, crea la base `lumiclass` (utf8mb4) y en `.env` usa el bloque MySQL comentado de `.env.example` (puerto 3306 o 3308 según tu WAMP). Laravel crea las tablas con InnoDB (`config/database.php`), necesario porque WAMP trae MyISAM por defecto.
+### Base de datos: SQLite o MySQL de WAMP
 
-Se usa el puerto **8001** y la cookie de sesión **`lumiclass_session`** para que LUMICLASS pueda correr al mismo tiempo que otro proyecto Laravel (que normalmente usa el 8000 y la cookie `laravel_session`) sin que se mezclen las sesiones.
+Por defecto usa **SQLite** (un archivo dentro del proyecto). Para **MySQL de WAMP**: crea la base `lumiclass`
+(utf8mb4) y en `.env` usa el bloque MySQL comentado de `.env.example` (puerto 3306 o 3308 según tu WAMP; míralo en el
+ícono de WAMP > MySQL). Luego `php artisan migrate --seed`.
+
+> `php artisan migrate:fresh --seed` **borra todos los datos** de la base configurada en `.env`. Revisa `DB_DATABASE` antes de usarlo.
+
+## Para la presentación
+
+```
+php artisan lumiclass:demo --zona-horaria=America/Bogota
+```
+
+Deja la **cuenta demo** lista: simulador reiniciado, historial limpio y 7 días de **historia de ejemplo** para que
+Estadísticas tenga datos (queda marcado en el historial como "Datos de ejemplo cargados"). No toca ninguna otra cuenta.
+
+- Guion paso a paso de la demo (10–12 min): [docs/GUIA_DEMO.md](docs/GUIA_DEMO.md)
+- Pruebas para hacer frente al profesor: [docs/GUION_PRUEBAS.md](docs/GUION_PRUEBAS.md)
+
+En `.env`, `LUMICLASS_FACTOR_TIEMPO_REGLAS=0.1` acorta las esperas de las reglas (5 min pasan a 30 s).
 
 ## Comandos
 
-| Comando                         | Qué hace                                            |
-| ------------------------------- | --------------------------------------------------- |
-| `php artisan serve --port=8001` | Levanta la aplicación en http://localhost:8001      |
-| `npm run dev`                   | Compila CSS/JS en caliente con Vite (en otra consola) |
-| `npm run build`                 | Compila CSS/JS para producción                      |
-| `php artisan test`              | Pruebas del backend (no toca tu base de datos)      |
-| `npm run prueba:js`             | Pruebas del JavaScript                              |
-| `npm run prueba:navegador`      | Recorrido completo en Edge/Chrome (servidor encendido) |
-| `vendor\bin\pint`               | Formatea el código PHP (`--test` solo revisa)       |
-| `php artisan migrate`           | Aplica las migraciones de la base de datos          |
-| `php artisan migrate:fresh --seed` | Recrea la base local desde cero con datos de ejemplo |
-| `php artisan lumiclass:tick`    | Revisa órdenes pendientes de los servos y reglas con tiempo |
-| `php artisan schedule:work`     | (Opcional, otra consola) ejecuta el tick cada 2 s   |
+| Comando                            | Qué hace                                                      |
+| ---------------------------------- | ------------------------------------------------------------- |
+| `php artisan serve --port=8001`    | Levanta la aplicación en http://localhost:8001                |
+| `npm run build`                    | Compila la interfaz (CSS/JS). `npm run dev` la recompila al editar |
+| `php artisan lumiclass:demo`       | Prepara la cuenta demo para presentar                         |
+| `php artisan lumiclass:tick`       | Revisa órdenes pendientes de los servos y reglas con tiempo   |
+| `php artisan schedule:work`        | (Opcional, otra consola) ejecuta el tick cada 2 s             |
+| `php artisan test`                 | Pruebas del backend (no tocan tu base de datos)               |
+| `npm run prueba:js`                | Pruebas del JavaScript                                        |
+| `npm run prueba:navegador`         | Recorrido completo en Edge/Chrome (con el servidor encendido) |
+| `vendor\bin\pint`                  | Formatea el código PHP (`--test` solo revisa)                 |
 
-## Qué mostrar en la interfaz
+`php artisan test` y Pint necesitan las dependencias de desarrollo: si instalaste con `composer install --no-dev`,
+ejecuta `composer install` antes.
 
-1. Entra con la cuenta demo y abre el salón. En **Simulador** pulsa "Entra gente": en **Inicio** y **Control** las luces se encienden solas.
-2. Pulsa "Queda vacío": tras la espera de la regla (5 min, o 30 s con `LUMICLASS_FACTOR_TIEMPO_REGLAS=0.1`) se apagan.
-3. En **Simulador**, pon un servo en "Falla" y da una orden en **Control**: la luz queda "Desconocido" y aparece la alerta.
-4. **Estadísticas** muestra cuántas horas estuvieron encendidas las luces y cuántas con la zona vacía. **Historial** se puede descargar en CSV.
-5. Apaga el servidor con Ctrl+C: aparece "Datos desactualizados". Vuelve a encenderlo: "Conexión recuperada".
+## Problemas frecuentes
 
-## Probar el simulador (PowerShell)
+| Síntoma | Causa y solución |
+| ------- | ---------------- |
+| "Failed to listen on 127.0.0.1:8001" | El puerto está ocupado (otra consola con LUMICLASS abierta). Ciérrala o usa otro puerto y cambia `APP_URL`. |
+| La página se ve sin estilos o da error "Vite manifest not found" | Falta compilar la interfaz: `npm install` y `npm run build`. |
+| Error 500 en todas las páginas con MySQL | Las tablas no existen: `php artisan migrate --seed`. Revisa `storage/logs/laravel.log`. |
+| MySQL: "Specified key was too long; max key length is 1000 bytes" | WAMP usa MyISAM por defecto. `config/database.php` ya fuerza InnoDB: actualiza el proyecto y vuelve a migrar (la base debe estar vacía). |
+| "La sesión expiró" (419) | La pestaña quedó abierta mucho tiempo. Recarga la página e ingresa de nuevo. |
+| Desde el celular no carga | Usa `--host=0.0.0.0`, la IP correcta del PC y la misma red WiFi; permite PHP en el firewall de Windows. |
+| Las luces no se apagan solas | La regla espera 5 min de salón vacío. Para la demo, `LUMICLASS_FACTOR_TIEMPO_REGLAS=0.1`. El sistema avanza mientras alguien tenga abierto el dashboard (o con `php artisan schedule:work`). |
 
-Con el servidor encendido (`php artisan serve --port=8001`), en otra consola:
+## Usar la API desde PowerShell
 
 ```powershell
 $api = "http://localhost:8001/api/v1"
 $json = @{ "Content-Type" = "application/json"; "Accept" = "application/json" }
 
-# 0. Iniciar sesión con la cuenta demo y usar su primer salón
+# Iniciar sesión con la cuenta demo y usar su primer salón
 $login = Invoke-RestMethod -Method Post "$api/auth/token" -Headers $json -Body '{"email": "demo@lumiclass.test", "password": "demo12345", "nombre_dispositivo": "PowerShell"}'
 $json["Authorization"] = "Bearer $($login.token)"
 $salon = (Invoke-RestMethod "$api/salones" -Headers $json).data[0].id
 
-# 1. Escenario limpio: todo activo y luces apagadas
-Invoke-RestMethod -Method Post "$api/salones/$salon/sim/reiniciar" -Headers $json
-
-# 2. Alguien entra al salón: la regla enciende las luces
+# Entra gente: la regla enciende las luces
 Invoke-RestMethod -Method Post "$api/salones/$salon/sim/presencia" -Headers $json -Body '{"presencia": true}'
 (Invoke-RestMethod "$api/salones/$salon/estado" -Headers $json).data.luces
 
-# 3. El salón queda vacío: se apagan tras la espera de la regla (300 s)
-Invoke-RestMethod -Method Post "$api/salones/$salon/sim/presencia" -Headers $json -Body '{"presencia": false}'
-
-# 4. Simular fallas: servo que no responde y sensor dañado
-Invoke-RestMethod -Method Patch "$api/sim/actuadores/1" -Headers $json -Body '{"respuesta": "sin_respuesta"}'
-Invoke-RestMethod -Method Patch "$api/sim/sensores/1" -Headers $json -Body '{"conexion": "falla"}'
-
-# 5. Ver el historial del salón
+# Historial y cerrar sesión (revoca el token)
 (Invoke-RestMethod "$api/salones/$salon/eventos" -Headers $json).data | Format-Table fecha, tipo, origen, mensaje
-
-# 6. Cerrar sesión (revoca el token)
 Invoke-RestMethod -Method Post "$api/auth/logout" -Headers $json
 ```
 
-Para la demo conviene acortar las esperas en `.env`: `LUMICLASS_FACTOR_TIEMPO_REGLAS=0.1` hace que los 300 s pasen a 30 s. El sistema avanza solo mientras se consulte `/salon/estado` (o con `php artisan schedule:work`).
-
-## Pruebas
-
-Qué cubre cada prueba y cómo correrlas (también contra MySQL): [docs/PRUEBAS.md](docs/PRUEBAS.md). En GitHub corren solas en cada push (`.github/workflows/pruebas.yml`).
+Todos los endpoints y protecciones: [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md#5-endpoints-apiv1-confirmado).
 
 ## Estructura
 
 ```
-app/         Lógica de la aplicación (modelos, controladores, servicios)
-routes/      Rutas web y de la API
-database/    Migraciones, seeders y base SQLite local
-resources/   Vistas, CSS y JS
-tests/       Pruebas (PHPUnit)
+app/         Lógica: controladores, modelos, servicios (luces, reglas, simulador, estadísticas), drivers
+routes/      Rutas web y de la API (/api/v1)
+database/    Migraciones y seeders
+resources/   Vistas (Blade), estilos (Tailwind) y JavaScript (Alpine)
+tests/       Pruebas: Feature (PHP), js (Vitest), navegador (Edge/Chrome)
 firmware/    Código de la placa (Fase 8)
-docs/        Arquitectura y documentación
-diseno/      Referencia de Figma
+docs/        Arquitectura, pruebas, guía de demo y guion de pruebas
+diseno/      Referencia de Figma (vacía: el diseño actual es propio, PROPUESTA)
 ```
 
-Las reglas de trabajo están en [CLAUDE.md](CLAUDE.md).
+Documentación técnica: [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) · Pruebas: [docs/PRUEBAS.md](docs/PRUEBAS.md) ·
+Reglas de trabajo del equipo: [CLAUDE.md](CLAUDE.md).
 
-## Sobre Laravel
+Construido con [Laravel](https://laravel.com) (licencia MIT), Alpine.js y Tailwind CSS.
 
-LUMICLASS está construido con [Laravel](https://laravel.com), un framework web de PHP. Documentación oficial: https://laravel.com/docs. Laravel es software de código abierto con licencia [MIT](https://opensource.org/licenses/MIT).
-
-**Estado:** Fase 9 completada (pruebas de backend, JavaScript y navegador; funciona con SQLite y MySQL). La Fase 8 (hardware real) está pendiente de confirmar los sensores.
+**Estado:** Fases 1–7, 9 y 10 completadas. Pendiente: Fase 8 (hardware real), cuando se confirmen la placa, los
+sensores y los servos.

@@ -18,4 +18,5 @@ enum TipoEvento: string
     case ReglaActualizada = 'regla.actualizada';
     case ReglaEliminada = 'regla.eliminada';
     case SimuladorReinicio = 'simulador.reinicio';
+    case DemoPreparada = 'demo.preparada';
 }
