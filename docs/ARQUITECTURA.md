@@ -12,16 +12,16 @@
 
 ## 1. Stack
 
-| Capa | Elección | Por qué |
-|---|---|---|
-| Lenguaje | TypeScript en todo el proyecto | Un solo lenguaje para el equipo; los tipos se comparten entre front y back. |
-| Repositorio | npm workspaces (monorepo) | `npm install` + `npm run dev` levanta todo en Windows. |
-| Backend | Node.js 20 + Fastify | Liviano, rápido, valida entradas con esquemas. |
-| Base de datos | SQLite + Prisma | Sin servidor que instalar (es un archivo); migraciones y seeds incluidos. Migrable a PostgreSQL. |
-| Validación | Zod (esquemas compartidos) | Las mismas reglas en la API y en los formularios. |
-| Frontend | React + Vite + Tailwind CSS | Arranque rápido; Tailwind facilita replicar proporciones de Figma, mobile-first. |
-| Pruebas | Vitest (+ Supertest, Testing Library) | Una sola herramienta para back y front. |
-| Calidad | ESLint + Prettier | Estilo uniforme entre tres personas. |
+| Capa          | Elección                              | Por qué                                                                                          |
+| ------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Lenguaje      | TypeScript en todo el proyecto        | Un solo lenguaje para el equipo; los tipos se comparten entre front y back.                      |
+| Repositorio   | npm workspaces (monorepo)             | `npm install` + `npm run dev` levanta todo en Windows.                                           |
+| Backend       | Node.js 20 + Fastify                  | Liviano, rápido, valida entradas con esquemas.                                                   |
+| Base de datos | SQLite + Prisma                       | Sin servidor que instalar (es un archivo); migraciones y seeds incluidos. Migrable a PostgreSQL. |
+| Validación    | Zod (esquemas compartidos)            | Las mismas reglas en la API y en los formularios.                                                |
+| Frontend      | React + Vite + Tailwind CSS           | Arranque rápido; Tailwind facilita replicar proporciones de Figma, mobile-first.                 |
+| Pruebas       | Vitest (+ Supertest, Testing Library) | Una sola herramienta para back y front.                                                          |
+| Calidad       | ESLint + Prettier                     | Estilo uniforme entre tres personas.                                                             |
 
 **Prueba:** en Windows, `git clone` → `npm install` → `npm run dev` debe funcionar (Fase 3).
 
@@ -64,16 +64,16 @@ LUMICLASS/
 
 ## 4. Entidades
 
-| Entidad | Campos clave |
-|---|---|
-| **Salon** | id, nombre, ocupado (calculado), ultimaActualizacion |
-| **Zona** | id, salonId, nombre, modo (`automatico` / `manual`) |
-| **Luz** | id, zonaId, nombre, estadoDeseado (`on`/`off`), estadoReal (`on`/`off`/`desconocido`), actuadorId |
-| **Sensor** | id, zonaId, tipo, conexion (`activo`/`inactivo`/`falla`), presencia, ultimaLectura, conteoPersonas? (solo si el hardware lo permite) |
-| **Actuador** (servo) | id, conexion, ocupado (ejecutando orden), ultimoResultado |
-| **Regla** | id, nombre, activa, prioridad, condicion (JSON), accion (JSON), horario? |
-| **Evento** | id, fecha, tipo, origen (`usuario`/`regla`/`sistema`/`simulador`), entidad, datos, severidad |
-| **Usuario** | Solo si se confirma que hay login. El diseño deja espacio para agregarlo. |
+| Entidad              | Campos clave                                                                                                                         |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **Salon**            | id, nombre, ocupado (calculado), ultimaActualizacion                                                                                 |
+| **Zona**             | id, salonId, nombre, modo (`automatico` / `manual`)                                                                                  |
+| **Luz**              | id, zonaId, nombre, estadoDeseado (`on`/`off`), estadoReal (`on`/`off`/`desconocido`), actuadorId                                    |
+| **Sensor**           | id, zonaId, tipo, conexion (`activo`/`inactivo`/`falla`), presencia, ultimaLectura, conteoPersonas? (solo si el hardware lo permite) |
+| **Actuador** (servo) | id, conexion, ocupado (ejecutando orden), ultimoResultado                                                                            |
+| **Regla**            | id, nombre, activa, prioridad, condicion (JSON), accion (JSON), horario?                                                             |
+| **Evento**           | id, fecha, tipo, origen (`usuario`/`regla`/`sistema`/`simulador`), entidad, datos, severidad                                         |
+| **Usuario**          | Solo si se confirma que hay login. El diseño deja espacio para agregarlo.                                                            |
 
 - `estadoDeseado` y `estadoReal` van separados: el servo puede fallar y, sin sensor de luz, el estado
   real es `desconocido`. La interfaz lo muestra como advertencia en lugar de un dato falso.
@@ -81,20 +81,21 @@ LUMICLASS/
 
 ## 5. Endpoints (`/api/v1`)
 
-| Método | Ruta | Uso |
-|---|---|---|
-| GET | `/salud` | Estado de API, driver y base de datos |
-| GET | `/salon/estado` | Todo el dashboard en una sola llamada |
-| GET | `/zonas` · `/luces` · `/sensores` · `/sensores/:id` | Listas y detalle |
-| PATCH | `/zonas/:id/modo` | `{ modo: "automatico" \| "manual" }` |
-| POST | `/luces/:id/comando` · `/zonas/:id/comando` | `{ accion: "encender" \| "apagar", idSolicitud }` |
-| GET/POST/PUT/DELETE | `/reglas[/:id]` | Gestión de reglas |
-| GET | `/eventos?tipo&desde&hasta&pagina` | Historial con filtros |
-| GET | `/estadisticas?rango` | Horas encendidas, ocupación, número de fallas |
-| GET | `/tiempo-real` | Flujo SSE |
-| POST | `/sim/...` | Solo si `DRIVER=simulado` (sección 6) |
+| Método              | Ruta                                                | Uso                                               |
+| ------------------- | --------------------------------------------------- | ------------------------------------------------- |
+| GET                 | `/salud`                                            | Estado de API, driver y base de datos             |
+| GET                 | `/salon/estado`                                     | Todo el dashboard en una sola llamada             |
+| GET                 | `/zonas` · `/luces` · `/sensores` · `/sensores/:id` | Listas y detalle                                  |
+| PATCH               | `/zonas/:id/modo`                                   | `{ modo: "automatico" \| "manual" }`              |
+| POST                | `/luces/:id/comando` · `/zonas/:id/comando`         | `{ accion: "encender" \| "apagar", idSolicitud }` |
+| GET/POST/PUT/DELETE | `/reglas[/:id]`                                     | Gestión de reglas                                 |
+| GET                 | `/eventos?tipo&desde&hasta&pagina`                  | Historial con filtros                             |
+| GET                 | `/estadisticas?rango`                               | Horas encendidas, ocupación, número de fallas     |
+| GET                 | `/tiempo-real`                                      | Flujo SSE                                         |
+| POST                | `/sim/...`                                          | Solo si `DRIVER=simulado` (sección 6)             |
 
 **Protecciones:**
+
 - **Solicitudes duplicadas:** cada orden lleva `idSolicitud`; si se repite, se devuelve la misma respuesta sin ejecutarla otra vez.
 - **Un servo, una orden:** si el servo está ocupado, la API responde `409`.
 - **Orden innecesaria:** si la luz ya está en el estado pedido, no se mueve el servo.
@@ -113,6 +114,7 @@ accionar(actuadorId, "encender" | "apagar") → { ok, estadoReal, error? }
 ```
 
 **Controles del simulador** (página "Simulador" y rutas `/sim`):
+
 - Forzar salón ocupado o vacío, en general o por zona.
 - Forzar una luz encendida o apagada (simula que alguien usó el interruptor a mano).
 - Poner un sensor en `falla` o desconectarlo.
@@ -120,6 +122,7 @@ accionar(actuadorId, "encender" | "apagar") → { ok, estadoReal, error? }
 - Reiniciar el escenario.
 
 **Motor de reglas:**
+
 - Escucha eventos de presencia y evalúa las reglas activas por prioridad, solo en zonas en modo automático.
 - Reglas iniciales: `presencia=ocupado → encender` y `presencia=vacío durante 300 s → apagar`
   (la espera evita apagones por lecturas falsas del PIR).
@@ -146,14 +149,14 @@ pruebas) y comprobar que la luz se apaga y aparece el evento.
 
 **Inicio** (dashboard), **Control** (luces y zonas), **Sensores**, **Reglas**, **Historial**, **Simulador**.
 
-| Estado | Color | Además |
-|---|---|---|
-| Luz encendida | Amarillo | Ícono de foco + texto |
-| Luz apagada | Gris | Ícono de foco apagado + texto |
-| Salón ocupado | Verde | Ícono de persona + texto |
-| Salón vacío | Azul | Ícono + texto |
-| Error / falla | Rojo | Ícono de alerta + texto |
-| Automático / manual | — | Insignia con ícono |
+| Estado              | Color    | Además                        |
+| ------------------- | -------- | ----------------------------- |
+| Luz encendida       | Amarillo | Ícono de foco + texto         |
+| Luz apagada         | Gris     | Ícono de foco apagado + texto |
+| Salón ocupado       | Verde    | Ícono de persona + texto      |
+| Salón vacío         | Azul     | Ícono + texto                 |
+| Error / falla       | Rojo     | Ícono de alerta + texto       |
+| Automático / manual | —        | Insignia con ícono            |
 
 Siempre ícono y texto además del color, para que se entienda a simple vista y sea accesible.
 

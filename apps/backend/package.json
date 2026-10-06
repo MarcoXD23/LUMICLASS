@@ -1,0 +1,23 @@
+{
+  "name": "@lumiclass/backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/servidor.ts",
+    "build": "tsup src/servidor.ts --format esm --platform node --target node20 --clean",
+    "start": "node dist/servidor.js",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "tsup": "^8.5.1",
+    "tsx": "^4.23.15"
+  },
+  "dependencies": {
+    "@lumiclass/compartido": "^0.1.0",
+    "fastify": "^5.12.5",
+    "zod": "^4.6.5"
+  }
+}

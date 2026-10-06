@@ -49,4 +49,4 @@ Debe distinguirse a simple vista: ocupado/vacío, luces on/off, automático/manu
 9. Pruebas completas y corrección de errores.
 10. Preparación de la presentación: README, guía de demo, guion de pruebas.
 
-Estado actual: Fase 2 completada (arquitectura PROPUESTA en `docs/ARQUITECTURA.md`). Pendiente: respuestas de la Fase 1 y capturas en `diseno/`. Siguiente: Fase 3.
+Estado actual: Fase 3 completada (estructura inicial, scripts y lint). Pendiente: respuestas de la Fase 1 y capturas en `diseno/`. Siguiente: Fase 4.
