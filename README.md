@@ -6,4 +6,4 @@ Aplicación web que muestra si el salón está ocupado o vacío, controla las lu
 
 **Equipo:** Camilo, Marcos y Sofía.
 
-**Estado:** Fase 1 (análisis). Las reglas de trabajo están en [CLAUDE.md](CLAUDE.md).
+**Estado:** Fase 2 (arquitectura, PROPUESTA). Arquitectura en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md). Las reglas de trabajo están en [CLAUDE.md](CLAUDE.md).
