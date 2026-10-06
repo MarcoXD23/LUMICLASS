@@ -107,6 +107,9 @@
                     <a href="{{ route('salones.estadisticas', $salon) }}" class="btn btn-secundario">
                         <x-icono nombre="estadisticas" /> Ver estadísticas
                     </a>
+                    <a href="{{ route('salones.configuracion', $salon) }}" class="btn btn-secundario">
+                        <x-icono nombre="ajustes" /> Configurar salón
+                    </a>
                 </div>
             </div>
         </template>

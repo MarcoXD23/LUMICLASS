@@ -24,6 +24,9 @@ Las mismas situaciones están cubiertas por pruebas automáticas (ver [PRUEBAS.m
 | F12 | Historial y filtro | Historial → Severidad "Error" → "Filtrar" | Solo eventos de error | | |
 | F13 | CSV | Historial → "Descargar CSV" → abrir en Excel | Columnas fecha, tipo, origen, severidad, mensaje; tildes correctas | | |
 | F14 | Estadísticas | Estadísticas → "7 días" → tocar una barra → "Ver como tabla" | Totales, detalle del día y tabla por día | | |
+| F16 | Configurar: luz | Inicio → "Configurar salón" → en una zona escribir un nombre → "+ Luz" → "Mover a" otra zona → quitarla | Aparece con su servo; cambia de zona; al quitarla desaparece. Todo queda en Historial como "Cambio de configuración" | | |
+| F17 | Configurar: zona | "Nueva zona" con 1 luz y 1 sensor → "Crear zona" → renombrarla → quitarla | Se crea, se renombra y se quita; en Control aparece y desaparece | | |
+| F18 | Último sensor | Quitar el único sensor de una zona en "Automático" | Pide confirmar: "sin sensor, sus reglas dejan de actuar" | | |
 | F15 | Celular | Abrir en el celular (o F12 → vista celular, 375 px) | Barra inferior; sin scroll horizontal; botones fáciles de tocar | | |
 
 ## Robustez (regla 6 del proyecto)

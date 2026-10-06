@@ -9,9 +9,10 @@
         'reglas' => ['Reglas', 'regla', route('salones.reglas', $salon)],
         'historial' => ['Historial', 'historial', route('salones.historial', $salon)],
     ];
-    // En escritorio cabe una sección más; en celular se llega a Estadísticas desde Inicio.
+    // En escritorio caben más secciones; en celular se llega a Estadísticas y Configurar desde Inicio.
     $enlacesEscritorio = $enlaces + [
         'estadisticas' => ['Estadísticas', 'estadisticas', route('salones.estadisticas', $salon)],
+        'configuracion' => ['Configurar', 'ajustes', route('salones.configuracion', $salon)],
     ];
     $simuladorActivo = config('lumiclass.driver') === 'simulado';
 @endphp

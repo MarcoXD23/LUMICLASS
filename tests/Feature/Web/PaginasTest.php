@@ -11,7 +11,7 @@ class PaginasTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const PAGINAS_DE_SALON = ['', '/control', '/sensores', '/reglas', '/historial', '/estadisticas', '/simulador'];
+    private const PAGINAS_DE_SALON = ['', '/control', '/sensores', '/reglas', '/historial', '/estadisticas', '/configuracion', '/simulador'];
 
     public function test_sin_sesion_todo_lleva_a_ingresar(): void
     {

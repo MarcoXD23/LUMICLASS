@@ -1,5 +1,6 @@
 import Alpine from 'alpinejs';
 import { avisar, registrarAvisos } from './avisos';
+import { configuracion } from './paginas/configuracion';
 import { control } from './paginas/control';
 import { ingreso, olvide, registro, restablecer, sesion } from './paginas/cuenta';
 import { estadisticas } from './paginas/estadisticas';
@@ -30,6 +31,7 @@ Alpine.data('salones', salones);
 // Inicio y Sensores solo muestran el estado del salón.
 Alpine.data('estadoSalon', estadoSalon);
 Alpine.data('control', control);
+Alpine.data('configuracion', configuracion);
 Alpine.data('reglas', reglas);
 Alpine.data('historial', historial);
 Alpine.data('estadisticas', estadisticas);

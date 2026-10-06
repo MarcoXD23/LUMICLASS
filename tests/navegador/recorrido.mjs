@@ -154,6 +154,28 @@ await etapa('Estadísticas', async () => {
     await revisarCelular(p, 'estadisticas');
 });
 
+await etapa('Configurar salón: agregar, renombrar, mover y quitar una luz (deja el salón como estaba)', async () => {
+    await p.goto(`${salon}/configuracion`);
+    await p.getByText('Luces y servos').first().waitFor({ timeout: 5000 });
+    const nombre = `Luz de prueba ${Date.now() % 10000}`;
+    await p.getByPlaceholder('Nombre de la luz nueva').first().fill(nombre);
+    await p.getByRole('button', { name: 'Luz', exact: true }).first().click();
+    await p.getByText(`Luz "${nombre}" agregada con su servo.`).waitFor({ timeout: 5000 });
+
+    p.once('dialog', (d) => d.accept(`${nombre} (editada)`));
+    await p.getByRole('button', { name: `Renombrar ${nombre}` }).click();
+    await p.getByText('Luz renombrada.').waitFor({ timeout: 5000 });
+
+    const mover = p.getByLabel(`Mover ${nombre} (editada) a otra zona`);
+    await mover.selectOption({ index: 1 });
+    await p.getByText(/ahora está en/).waitFor({ timeout: 5000 });
+    await revisarCelular(p, 'configurar-salon');
+
+    p.once('dialog', (d) => d.accept());
+    await p.getByRole('button', { name: `Quitar ${nombre} (editada)` }).click();
+    await p.getByText('Luz quitada.').waitFor({ timeout: 5000 });
+});
+
 await etapa('Servidor caído: "Datos desactualizados" y luego "Conexión recuperada"', async () => {
     await p.goto(salon);
     await p.getByText('Luces encendidas').waitFor({ timeout: 5000 });

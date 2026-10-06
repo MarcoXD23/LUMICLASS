@@ -22,4 +22,5 @@ Route::middleware('auth')->controller(PaginaController::class)->group(function (
     Route::get('salones/{salon}/historial', 'historial')->name('salones.historial');
     Route::get('salones/{salon}/estadisticas', 'estadisticas')->name('salones.estadisticas');
     Route::get('salones/{salon}/simulador', 'simulador')->name('salones.simulador');
+    Route::get('salones/{salon}/configuracion', 'configuracion')->name('salones.configuracion');
 });

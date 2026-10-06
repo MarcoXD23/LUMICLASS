@@ -38,6 +38,10 @@
 
                     <div class="flex gap-2 border-t border-slate-100 pt-3">
                         <a :href="`/salones/${salon.id}`" class="btn btn-primario flex-1">Abrir</a>
+                        <a :href="`/salones/${salon.id}/configuracion`" class="btn btn-secundario"
+                            :aria-label="`Configurar ${salon.nombre}`" title="Configurar zonas, luces y sensores">
+                            <x-icono nombre="ajustes" clase="size-4" />
+                        </a>
                         <button type="button" class="btn btn-secundario" @click="editandoId === salon.id ? editandoId = null : editar(salon)"
                             :aria-label="`Renombrar ${salon.nombre}`">
                             <x-icono nombre="editar" clase="size-4" />

@@ -24,6 +24,7 @@ export const etiquetas = {
         'regla.eliminada': 'Regla borrada',
         'simulador.reinicio': 'Simulador reiniciado',
         'demo.preparada': 'Datos de ejemplo cargados',
+        configuracion: 'Cambio de configuración',
     },
 };
 

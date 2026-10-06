@@ -116,6 +116,9 @@ Un enlace inválido, vencido o de otra cuenta responde siempre `400 enlace_inval
 | POST · GET          | `/auth/logout` · `/auth/yo`                       | Cerrar sesión (o revocar el token) · datos de la cuenta   |
 | GET · POST          | `/salones`                                        | Mis salones · crear `{ nombre, zonas?: 1..10, luces_por_zona?: 1..10 }` (máx. 20 por cuenta) |
 | GET · PATCH · DELETE | `/salones/{id}`                                  | Ver · renombrar `{ nombre }` · borrar con todo lo suyo    |
+| POST · PATCH · DELETE | `/salones/{id}/zonas` · `/zonas/{id}`           | **Configurar:** crear zona `{ nombre, luces?: 0..10, sensores?: 0..3 }` · renombrar · quitar (no la última; borra sus luces, servos, sensores y reglas propias) |
+| POST · PATCH · DELETE | `/zonas/{id}/luces` · `/luces/{id}`             | Agregar luz `{ nombre }` (con su servo) · renombrar/mover `{ nombre?, zona_id? }` (solo a zonas del mismo salón) · quitar con su servo. Con el servo trabajando: 409 |
+| POST · PATCH · DELETE | `/zonas/{id}/sensores` · `/sensores/{id}`       | Agregar `{ nombre }` · renombrar · quitar (el último de una zona en automático pide `?confirmar=1`; si no, 409 `ultimo_sensor`) |
 | GET                 | `/salones/{id}/estado`                            | Todo el dashboard de un salón en una sola llamada         |
 | GET                 | `/salones/{id}/zonas` · `/luces` · `/sensores` · `/reglas` | Listas del salón                                 |
 | GET                 | `/salones/{id}/eventos?tipo&origen&severidad&desde&hasta&por_pagina&page` | Historial paginado (más reciente primero) |

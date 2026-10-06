@@ -27,6 +27,7 @@ return [
         'string' => 'El campo :attribute debe tener al menos :min caracteres.',
     ],
     'numeric' => 'El campo :attribute debe ser un número.',
+    'prohibited' => 'El campo :attribute no se puede enviar aquí.',
     'required' => 'El campo :attribute es obligatorio.',
     'required_without' => 'El campo :attribute es obligatorio si no se envía :values.',
     'string' => 'El campo :attribute debe ser texto.',

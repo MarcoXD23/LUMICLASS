@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ConfiguracionController;
 use App\Http\Controllers\Api\EstadisticaController;
 use App\Http\Controllers\Api\EventoController;
 use App\Http\Controllers\Api\LuzController;
@@ -62,6 +63,19 @@ Route::prefix('v1')->name('api.')->group(function () {
         Route::get('salones/{salon}/estadisticas', EstadisticaController::class);
 
         Route::get('zonas/{zona}', [ZonaController::class, 'show']);
+
+        // Configurar el salón: zonas, luces (con su servo) y sensores.
+        Route::controller(ConfiguracionController::class)->group(function () {
+            Route::post('salones/{salon}/zonas', 'crearZona');
+            Route::patch('zonas/{zona}', 'renombrarZona');
+            Route::delete('zonas/{zona}', 'quitarZona');
+            Route::post('zonas/{zona}/luces', 'agregarLuz');
+            Route::patch('luces/{luz}', 'editarLuz');
+            Route::delete('luces/{luz}', 'quitarLuz');
+            Route::post('zonas/{zona}/sensores', 'agregarSensor');
+            Route::patch('sensores/{sensor}', 'renombrarSensor');
+            Route::delete('sensores/{sensor}', 'quitarSensor');
+        });
         Route::patch('zonas/{zona}/modo', [ZonaController::class, 'modo']);
         Route::post('zonas/{zona}/comando', [ZonaController::class, 'comando']);
 

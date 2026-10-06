@@ -26,6 +26,7 @@ Hoy funciona con **hardware simulado**; la integración con la placa real es la 
 - **Reglas** editables: "si está ocupado → encender", "si está vacío durante 5 min → apagar", por zona o para todo el salón.
 - **Sensores:** conexión, presencia y última lectura.
 - **Historial** con filtros y descarga en CSV; **Estadísticas** de 1, 7 y 30 días.
+- **Configurar salón:** agregar, renombrar, mover y quitar zonas, luces (cada una con su servo) y sensores.
 - **Simulador:** forzar presencia, dañar sensores, hacer fallar o demorar servos y simular el interruptor de pared.
 - **No se rompe** ante sensores o servos desconectados, servidor caído, datos inválidos, órdenes duplicadas ni
   estados imposibles (ver [docs/PRUEBAS.md](docs/PRUEBAS.md)).

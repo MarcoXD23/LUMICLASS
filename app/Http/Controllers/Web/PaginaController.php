@@ -69,6 +69,11 @@ class PaginaController extends Controller
         return view('salones.estadisticas', ['salon' => $salon]);
     }
 
+    public function configuracion(Salon $salon): View
+    {
+        return view('salones.configuracion', ['salon' => $salon]);
+    }
+
     public function simulador(Salon $salon): View
     {
         abort_unless(config('lumiclass.driver') === 'simulado', 404);
