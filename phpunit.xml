@@ -20,6 +20,11 @@
     <php>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_LOCALE" value="es"/>
+        <!-- Valores fijos de LUMICLASS: las pruebas no dependen de lo que haya en .env (p. ej. el factor 0.1 de la demo). -->
+        <env name="LUMICLASS_DRIVER" value="simulado" force="true"/>
+        <env name="LUMICLASS_FACTOR_TIEMPO_REGLAS" value="1" force="true"/>
+        <env name="LUMICLASS_SERVO_SEGUNDOS_LENTO" value="5" force="true"/>
+        <env name="LUMICLASS_SERVO_SEGUNDOS_ESPERA" value="10" force="true"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>

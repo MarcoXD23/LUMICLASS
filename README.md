@@ -68,6 +68,26 @@ confirmar el salón real).
 - **Puerto 8001 y cookie `lumiclass_session`:** así LUMICLASS corre al mismo tiempo que otro proyecto Laravel
   (que usa el 8000 y la cookie `laravel_session`) sin mezclar sesiones.
 
+### Recuperar contraseña y correo
+
+En "Ingresar" está **"¿Olvidaste tu contraseña?"**: llega un correo con un enlace (vence en 60 min, sirve una sola vez).
+Por defecto `MAIL_MAILER=log`: el correo **no se envía**, queda escrito en `storage/logs/laravel.log` (en el hosting se
+abre con FileZilla y se busca `restablecer`). Para enviarlo de verdad con **Gmail**:
+
+1. En la cuenta de Gmail, activa la **verificación en 2 pasos**.
+2. Crea una **contraseña de aplicación** en https://myaccount.google.com/apppasswords (16 letras).
+3. En el `.env` **del servidor** (nunca en git):
+   ```
+   MAIL_MAILER=smtp
+   MAIL_HOST=smtp.gmail.com
+   MAIL_PORT=587
+   MAIL_USERNAME=tu.cuenta@gmail.com
+   MAIL_PASSWORD="xxxx xxxx xxxx xxxx"
+   MAIL_FROM_ADDRESS=tu.cuenta@gmail.com
+   ```
+
+Si el envío falla (algunos hostings gratuitos bloquean SMTP), el usuario ve el mismo mensaje y el error queda en el log.
+
 ### Base de datos: SQLite o MySQL de WAMP
 
 Por defecto usa **SQLite** (un archivo dentro del proyecto). Para **MySQL de WAMP**: crea la base `lumiclass`

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\Salon;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\Request;
 
 /**
  * Solo entrega las vistas: los datos los pide cada pantalla a la API (/api/v1).
@@ -20,6 +21,17 @@ class PaginaController extends Controller
     public function registro(): View
     {
         return view('auth.registro');
+    }
+
+    public function olvide(): View
+    {
+        return view('auth.olvide');
+    }
+
+    /** Llega desde el enlace del correo: /restablecer/{token}?email=... */
+    public function restablecer(Request $request, string $token): View
+    {
+        return view('auth.restablecer', ['token' => $token, 'email' => (string) $request->query('email', '')]);
     }
 
     public function salones(): View

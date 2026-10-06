@@ -2,13 +2,16 @@
 // Requisitos: servidor encendido (php artisan serve --port=8001) y la cuenta demo (php artisan migrate --seed).
 // Uso: npm run prueba:navegador      (LUMICLASS_URL=http://otra:puerto para otro servidor)
 // Ojo: modifica el salón demo (reinicia el simulador, crea una regla y una cuenta nueva).
-import { existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
 
 const BASE = process.env.LUMICLASS_URL ?? 'http://localhost:8001';
 const CAPTURAS = join(dirname(fileURLToPath(import.meta.url)), 'capturas');
+// Con MAIL_MAILER=log el correo de recuperación queda en este archivo (solo si el servidor es este mismo proyecto).
+const LOG = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'storage', 'logs', 'laravel.log');
+let cuentaNueva = '';
 const NAVEGADORES = [
     'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
     'C:/Program Files/Microsoft/Edge/Application/msedge.exe',
@@ -181,13 +184,41 @@ await etapa('Registro de una cuenta nueva y salir', async () => {
     vigilar(r, 'registro');
     await r.goto(`${BASE}/registro`);
     await r.getByLabel('Nombre').fill('Cuenta de prueba');
-    await r.getByLabel('Correo').fill(`prueba${Date.now()}@ejemplo.com`);
+    cuentaNueva = `prueba${Date.now()}@ejemplo.com`;
+    await r.getByLabel('Correo').fill(cuentaNueva);
     await r.getByLabel('Contraseña (mínimo 8 caracteres)').fill('secreta123');
     await r.getByLabel('Repite la contraseña').fill('secreta123');
     await r.getByRole('button', { name: 'Crear cuenta' }).click();
     await r.waitForURL(/\/salones\/\d+$/, { timeout: 5000 });
     await r.getByRole('button', { name: 'Salir' }).click();
     await r.waitForURL('**/ingresar', { timeout: 5000 });
+});
+
+await etapa('Recuperar contraseña (con la cuenta nueva) y entrar con la nueva', async () => {
+    const ctx = await navegador.newContext({ viewport: { width: 375, height: 812 } });
+    const r = await ctx.newPage();
+    vigilar(r, 'recuperar');
+    await r.goto(`${BASE}/ingresar`);
+    await r.getByRole('link', { name: '¿Olvidaste tu contraseña?' }).click();
+    await r.getByLabel('Correo').fill(cuentaNueva);
+    await r.getByRole('button', { name: 'Enviar enlace' }).click();
+    await r.getByText('Revisa tu correo').waitFor({ timeout: 5000 });
+
+    // Busca el enlace en el log (MAIL_MAILER=log). Con correo real o servidor remoto, este paso se omite.
+    const log = existsSync(LOG) ? readFileSync(LOG, 'utf8') : '';
+    const enlaces = [...log.matchAll(/https?:\/\/[^\s\]\)"]+\/restablecer\/[A-Za-z0-9]+\?email=([^\s\]\)"&]+)/g)]
+        .filter((m) => decodeURIComponent(m[1]) === cuentaNueva);
+    if (!enlaces.length) {
+        console.log('   (sin enlace en storage/logs/laravel.log: se verificó solo el envío)');
+        return;
+    }
+    const url = new URL(enlaces.at(-1)[0]);
+    await r.goto(`${BASE}${url.pathname}${url.search}`);
+    await r.getByLabel('Contraseña nueva (mínimo 8 caracteres)').fill('otraClave99');
+    await r.getByLabel('Repite la contraseña').fill('otraClave99');
+    await r.getByRole('button', { name: 'Guardar contraseña' }).click();
+    await r.waitForURL('**/salones', { timeout: 5000 });
+    await revisarCelular(r, 'recuperar-contrasena');
 });
 
 await navegador.close();

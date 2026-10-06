@@ -42,6 +42,8 @@ Route::prefix('v1')->name('api.')->group(function () {
         Route::post('auth/registro', [AuthController::class, 'registro']);
         Route::post('auth/login', [AuthController::class, 'login']);
         Route::post('auth/token', [AuthController::class, 'token']);
+        Route::post('auth/olvide', [AuthController::class, 'olvide']);
+        Route::post('auth/restablecer', [AuthController::class, 'restablecer']);
     });
 
     Route::middleware('auth:sanctum')->group(function () {

@@ -52,3 +52,5 @@ Las mismas situaciones están cubiertas por pruebas automáticas (ver [PRUEBAS.m
 | S03 | Contraseña incorrecta | `/ingresar` con contraseña mala | "Correo o contraseña incorrectos." | | |
 | S04 | Muchos intentos | 6 ingresos fallidos seguidos | "Demasiados intentos. Espera un minuto…" | | |
 | S05 | Código en nombres | Crear un salón llamado `<b>hola</b>` | Se ve el texto tal cual, sin negrita | | |
+| S06 | Recuperar contraseña | Ingresar → "¿Olvidaste tu contraseña?" → correo de una cuenta → "Enviar enlace" → abrir el enlace del correo (o de `storage/logs/laravel.log`) → contraseña nueva dos veces → "Guardar contraseña" | Entra a "Mis salones"; la contraseña vieja ya no sirve; abrir el mismo enlace otra vez dice "El enlace no es válido o ya venció" | | |
+| S07 | Recuperar con correo inexistente | "¿Olvidaste tu contraseña?" con un correo que no tiene cuenta | El mismo mensaje que con un correo real (no revela qué correos existen) | | |

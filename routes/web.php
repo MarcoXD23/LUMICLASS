@@ -8,6 +8,9 @@ Route::get('/', fn () => redirect()->route(auth()->check() ? 'salones.index' : '
 Route::middleware('guest')->controller(PaginaController::class)->group(function () {
     Route::get('ingresar', 'ingresar')->name('ingresar');
     Route::get('registro', 'registro')->name('registro');
+    Route::get('olvide', 'olvide')->name('olvide');
+    // El nombre password.reset es el que Laravel espera para el enlace del correo.
+    Route::get('restablecer/{token}', 'restablecer')->name('password.reset');
 });
 
 Route::middleware('auth')->controller(PaginaController::class)->group(function () {

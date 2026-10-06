@@ -11,6 +11,10 @@
         <x-campo etiqueta="Contraseña" type="password" x-model="password" autocomplete="current-password" required
             error="errores.password" />
 
+        <p class="-mt-2 text-right text-sm">
+            <a href="{{ route('olvide') }}" class="inline-flex min-h-11 items-center font-semibold text-marca-600 lg:inline lg:min-h-0">¿Olvidaste tu contraseña?</a>
+        </p>
+
         <button type="submit" class="btn btn-primario w-full" :disabled="enviando">
             <span x-show="!enviando">Ingresar</span>
             <span x-show="enviando" x-cloak>Ingresando…</span>

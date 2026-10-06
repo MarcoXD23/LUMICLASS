@@ -30,6 +30,8 @@ reglas de "5 minutos vacío" se prueban sin esperar.
 | `Api/EstadisticasTest`      | Horas encendidas/ocupado/desperdicio calculadas a mano, días por zona horaria             |
 | `Api/RobustezTest`          | Regla 6: id de orden reutilizado, carreras, tick que falla, textos largos, tipos raros, N+1 |
 | `Api/SeguridadTest`         | XSS, asignación masiva, contraseñas cifradas, cookie de sesión, tokens falsos             |
+| `Api/RecuperarContrasenaTest` | Enlace por correo en español, respuesta igual exista o no la cuenta, enlace de un uso y 60 min, cierra otras sesiones y tokens |
+| `Api/MensajesEnEspanolTest` | Toda regla de validación usada tiene su mensaje en español                                |
 | `Web/PaginasTest`           | Redirecciones sin sesión, páginas del dueño, 404 a otra cuenta, errores en español        |
 
 **Con MySQL:** las mismas pruebas pasan contra MySQL. Para comprobarlo, crea una base vacía **aparte**

@@ -102,8 +102,12 @@ salones** y puede hacer todo, pero **solo** sobre lo suyo. Un único rol (sin ad
 | POST   | `/auth/registro`  | `{ nombre, email, password, password_confirmation }` → crea la cuenta + salón de ejemplo e inicia sesión |
 | POST   | `/auth/login`     | `{ email, password }` → sesión del navegador (antes: `GET /sanctum/csrf-cookie`)          |
 | POST   | `/auth/token`     | `{ email, password, nombre_dispositivo? }` → token para scripts y placa                    |
+| POST   | `/auth/olvide`    | `{ email }` → envía el enlace para crear contraseña nueva. Respuesta **siempre igual** (no revela si el correo existe) |
+| POST   | `/auth/restablecer` | `{ token, email, password, password_confirmation }` → cambia la contraseña, revoca tokens, cierra otras sesiones e ingresa |
 
-Los tres de `/auth` admiten 5 intentos por minuto (`429 demasiados_intentos`).
+Las rutas de `/auth` sin sesión admiten 5 intentos por minuto (`429 demasiados_intentos`). El enlace de recuperación
+vence a los 60 min, sirve una sola vez y no se reenvía más de una vez por minuto al mismo correo (`config/auth.php`).
+Un enlace inválido, vencido o de otra cuenta responde siempre `400 enlace_invalido` con el mismo mensaje.
 
 **Con sesión o token** (sin ellos: `401 no_autenticado`):
 
