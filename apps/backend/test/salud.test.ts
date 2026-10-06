@@ -42,6 +42,8 @@ describe('leerEntorno', () => {
       DRIVER: 'simulado',
       DATABASE_URL: 'file:./prisma/dev.db',
       TIEMPO_MAX_ACTUADOR_MS: 3000,
+      INTERVALO_REGLAS_MS: 60_000,
+      SIM_DEMORA_LENTO_MS: 2000,
     });
   });
 

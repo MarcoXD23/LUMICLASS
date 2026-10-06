@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "predev": "prisma migrate deploy && prisma db seed",
-    "dev": "tsx watch src/servidor.ts",
+    "dev": "node --watch --import tsx src/servidor.ts",
     "build": "tsup src/servidor.ts --format esm --platform node --target node20 --clean",
     "prestart": "prisma migrate deploy",
     "start": "node dist/servidor.js",

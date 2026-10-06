@@ -2,7 +2,7 @@ import { construirApp } from './app';
 import { leerEntorno, type Entorno } from './config/entorno';
 import { crearBaseDatos } from './db/cliente';
 import type { DriverHardware } from './drivers/driver';
-import { DriverEnMemoria } from './drivers/driverEnMemoria';
+import { DriverSimulado } from './drivers/driverSimulado';
 
 function cargarArchivoEnv(): void {
   try {
@@ -16,8 +16,7 @@ function crearDriver(entorno: Entorno): DriverHardware {
   if (entorno.DRIVER === 'real') {
     throw new Error('El driver "real" se implementa en la Fase 8. Usa DRIVER=simulado.');
   }
-  // Fase 4: driver mínimo. En la Fase 5 se reemplaza por el simulador completo.
-  return new DriverEnMemoria();
+  return new DriverSimulado({ demoraLentoMs: entorno.SIM_DEMORA_LENTO_MS });
 }
 
 async function iniciar(): Promise<void> {

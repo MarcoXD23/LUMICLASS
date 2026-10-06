@@ -54,6 +54,22 @@ La primera vez, `npm run dev` crea la base de datos SQLite (`apps/backend/prisma
 
 Los errores siempre responden `{ "error": { "codigo", "mensaje" } }`. Una orden repetida con el mismo `idSolicitud` no se ejecuta dos veces. Los datos de ejemplo (2 zonas; 1 luz, 1 servo y 1 sensor PIR por zona) son **PROPUESTA** hasta confirmar el hardware.
 
+## Simulador (`DRIVER=simulado`)
+
+Sin hardware, el simulador permite probar todo el sistema. Las reglas automáticas reaccionan como con sensores reales.
+
+| Ruta (POST)           | Cuerpo de ejemplo                                | Qué simula                                     |
+| --------------------- | ------------------------------------------------ | ---------------------------------------------- |
+| `/sim/presencia`      | `{ "zonaId": "zona-frente", "presencia": true }` | Alguien entra (sin `zonaId`: todo el salón)    |
+| `/sim/sensores/:id`   | `{ "conexion": "falla" }`                        | Sensor en falla, desconectado o recuperado     |
+| `/sim/actuadores/:id` | `{ "respuesta": "sin_respuesta" }`               | Servo `ok`, `falla`, `lento` o `sin_respuesta` |
+| `/sim/luces/:id`      | `{ "estado": "on" }`                             | Alguien usó el interruptor a mano              |
+| `/sim/reiniciar`      | —                                                | Todo vuelve al estado inicial                  |
+
+`GET /sim/estado` muestra el estado interno del simulador.
+
+**Reglas iniciales:** zona ocupada → encender; zona vacía durante 300 s → apagar. Solo actúan en zonas en modo automático; una orden manual pasa la zona a manual. Si un sensor falla, el sistema no apaga la luz (no sabe si hay gente).
+
 ## Estructura
 
 ```
@@ -67,4 +83,4 @@ diseno/              Referencia de Figma
 
 La arquitectura completa está en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md). Las reglas de trabajo están en [CLAUDE.md](CLAUDE.md).
 
-**Estado:** Fase 4 completada (backend, API y base de datos).
+**Estado:** Fase 5 completada (simulador y motor de automatización).

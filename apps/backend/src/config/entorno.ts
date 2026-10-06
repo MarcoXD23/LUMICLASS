@@ -13,6 +13,10 @@ const esquemaEntorno = z.object({
     .default(URL_BD_POR_DEFECTO),
   /** Tiempo máximo que se espera la confirmación de un servo. */
   TIEMPO_MAX_ACTUADOR_MS: z.coerce.number().int().min(100).max(60_000).default(3000),
+  /** Cada cuánto se revisan las reglas aunque no cambie la presencia (reglas con horario). */
+  INTERVALO_REGLAS_MS: z.coerce.number().int().min(1000).max(3_600_000).default(60_000),
+  /** Demora del servo simulado en modo "lento". */
+  SIM_DEMORA_LENTO_MS: z.coerce.number().int().min(0).max(30_000).default(2000),
 });
 
 export type Entorno = z.infer<typeof esquemaEntorno>;

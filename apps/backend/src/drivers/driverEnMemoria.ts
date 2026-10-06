@@ -9,8 +9,8 @@ const responderSiempreOk: Responder = async (_actuadorId, accion) => ({
 });
 
 /**
- * Driver mínimo: el servo siempre obedece y no hay lecturas de sensores.
- * Se usa en la Fase 4 y en pruebas; el simulador completo llega en la Fase 5.
+ * Driver mínimo para pruebas: el servo responde con `responder` (por defecto, siempre obedece)
+ * y las lecturas de sensores se inyectan con `emitir()`. La app usa DriverSimulado.
  */
 export class DriverEnMemoria implements DriverHardware {
   readonly nombre = 'memoria';
@@ -25,7 +25,6 @@ export class DriverEnMemoria implements DriverHardware {
 
   async detener(): Promise<void> {
     this.conectado = false;
-    this.oyentes.clear();
   }
 
   estadoConexion() {
@@ -39,6 +38,11 @@ export class DriverEnMemoria implements DriverHardware {
   alCambiarPresencia(callback: (lectura: LecturaSensor) => void): () => void {
     this.oyentes.add(callback);
     return () => this.oyentes.delete(callback);
+  }
+
+  /** Envía una lectura a quien escuche (solo pruebas). */
+  emitir(lectura: LecturaSensor): void {
+    for (const oyente of this.oyentes) oyente(lectura);
   }
 
   async accionar(actuadorId: string, accion: AccionLuz): Promise<ResultadoAccion> {

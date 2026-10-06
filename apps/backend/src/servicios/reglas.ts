@@ -57,6 +57,20 @@ export class ServicioReglas {
     return reglas.map(aReglaDto);
   }
 
+  /** Igual que listar(), pero salta las reglas corruptas en vez de fallar (lo usa el motor). */
+  async listarValidas(): Promise<ReglaDto[]> {
+    const reglas = await this.bd.regla.findMany({
+      orderBy: [{ prioridad: 'asc' }, { nombre: 'asc' }],
+    });
+    return reglas.flatMap((regla) => {
+      try {
+        return [aReglaDto(regla)];
+      } catch {
+        return [];
+      }
+    });
+  }
+
   async obtener(id: string): Promise<ReglaDto> {
     const regla = await this.bd.regla.findUnique({ where: { id } });
     if (!regla) throw noEncontrado('una regla', id);

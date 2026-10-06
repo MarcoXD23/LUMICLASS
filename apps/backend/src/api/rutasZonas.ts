@@ -12,9 +12,13 @@ export function rutasZonas(api: FastifyInstance, servicios: Servicios): void {
 
   api.get<ConId>('/zonas/:id', (peticion) => servicios.zonas.obtener(peticion.params.id));
 
-  api.patch<ConId>('/zonas/:id/modo', (peticion) => {
+  api.patch<ConId>('/zonas/:id/modo', async (peticion) => {
     const { modo } = validar(esquemaCambioModo, peticion.body);
-    return servicios.zonas.cambiarModo(peticion.params.id, modo, 'usuario');
+    const zona = await servicios.zonas.cambiarModo(peticion.params.id, modo, 'usuario');
+    if (modo !== 'automatico') return zona;
+    // Al volver a automático, las reglas se aplican de inmediato.
+    await servicios.motor.evaluarZona(zona.id);
+    return servicios.zonas.obtener(zona.id);
   });
 
   api.post<ConId>('/zonas/:id/comando', async (peticion, respuesta) => {

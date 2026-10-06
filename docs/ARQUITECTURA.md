@@ -118,7 +118,7 @@ accionar(actuadorId, "encender" | "apagar") → { ok, estadoReal, error? }
 - Forzar salón ocupado o vacío, en general o por zona.
 - Forzar una luz encendida o apagada (simula que alguien usó el interruptor a mano).
 - Poner un sensor en `falla` o desconectarlo.
-- Elegir la respuesta del servo: `ok`, `falla`, `lento` (5 s) o `sin respuesta`.
+- Elegir la respuesta del servo: `ok`, `falla`, `lento` (2 s, configurable con `SIM_DEMORA_LENTO_MS`; debe ser menor que el límite de 3 s) o `sin_respuesta` (provoca el error por tiempo).
 - Reiniciar el escenario.
 
 **Motor de reglas:**

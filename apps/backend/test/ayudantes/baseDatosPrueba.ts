@@ -4,8 +4,10 @@ import { join } from 'node:path';
 import { construirApp } from '../../src/app';
 import { leerEntorno } from '../../src/config/entorno';
 import { crearBaseDatos } from '../../src/db/cliente';
+import type { DriverHardware } from '../../src/drivers/driver';
 import { DriverEnMemoria } from '../../src/drivers/driverEnMemoria';
 import { sembrar } from '../../prisma/seed';
+import { RelojManual } from './relojManual';
 
 const CARPETA_MIGRACIONES = join(import.meta.dirname, '..', '..', 'prisma', 'migrations');
 
@@ -24,10 +26,11 @@ function sentenciasDeMigracion(): string[] {
 
 /**
  * Crea una app de prueba con su propia base SQLite temporal (migrada y con datos iniciales).
- * `driver` permite simular respuestas del servo.
+ * - `driver`: hardware a usar (por defecto DriverEnMemoria, que siempre obedece).
+ * - El reloj es manual: el tiempo solo avanza con `avanzar(ms)`.
  */
-export async function crearAppDePrueba(
-  opciones: { driver?: DriverEnMemoria; sinDatos?: boolean } = {},
+export async function crearAppDePrueba<D extends DriverHardware = DriverEnMemoria>(
+  opciones: { driver?: D; sinDatos?: boolean } = {},
 ) {
   const carpeta = mkdtempSync(join(tmpdir(), 'lumiclass-prueba-'));
   const url = `file:${join(carpeta, 'prueba.db')}`;
@@ -37,16 +40,28 @@ export async function crearAppDePrueba(
   }
   if (!opciones.sinDatos) await sembrar(bd);
 
-  const driver = opciones.driver ?? new DriverEnMemoria();
+  const driver = (opciones.driver ?? new DriverEnMemoria()) as D;
   await driver.iniciar();
+  const reloj = new RelojManual();
   const entorno = leerEntorno({ DATABASE_URL: url, TIEMPO_MAX_ACTUADOR_MS: '200' });
-  const app = construirApp({ entorno, bd, driver });
+  const app = construirApp({ entorno, bd, driver, reloj });
   await app.ready();
+  const { servicios } = app;
+
+  /** Espera a que presencia y motor terminen de reaccionar. */
+  const esperarEfectos = async () => {
+    await servicios.presencia.esperar();
+    await servicios.motor.esperarInactivo();
+  };
 
   return {
     app,
     bd,
     driver,
+    reloj,
+    servicios,
+    esperarEfectos,
+    avanzar: (ms: number) => reloj.avanzar(ms, esperarEfectos),
     async cerrar() {
       await app.close();
       await driver.detener();
@@ -56,7 +71,9 @@ export async function crearAppDePrueba(
   };
 }
 
-export type AppDePrueba = Awaited<ReturnType<typeof crearAppDePrueba>>;
+export type AppDePrueba<D extends DriverHardware = DriverEnMemoria> = Awaited<
+  ReturnType<typeof crearAppDePrueba<D>>
+>;
 
 let contador = 0;
 /** idSolicitud único y válido para cada orden de prueba. */

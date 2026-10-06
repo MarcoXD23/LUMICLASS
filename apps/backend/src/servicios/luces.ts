@@ -52,11 +52,13 @@ export class ServicioLuces {
   /**
    * Ejecuta una orden sobre una luz. Si la da un usuario y la zona está en automático,
    * la zona pasa a manual (para que una regla no deshaga la orden).
+   * `contexto` se agrega a los datos del evento (p. ej. qué regla dio la orden).
    */
   async comandar(
     luzId: string,
     accion: AccionLuz,
     origen: OrigenEvento,
+    contexto: Record<string, unknown> = {},
   ): Promise<RespuestaComandoLuz> {
     const luz = await this.bd.luz.findUnique({
       where: { id: luzId },
@@ -117,7 +119,7 @@ export class ServicioLuces {
           entidad: 'luz',
           entidadId: luzId,
           mensaje: `No se pudo ${accion} "${luz.nombre}": ${resultado.error}`,
-          datos: { accion, actuadorId: luz.actuadorId },
+          datos: { ...contexto, accion, actuadorId: luz.actuadorId },
         });
         throw hardwareNoDisponible(
           'ACTUADOR_SIN_RESPUESTA',
@@ -139,7 +141,7 @@ export class ServicioLuces {
         entidad: 'luz',
         entidadId: luzId,
         mensaje: `Luz "${luz.nombre}" ${resultado.estadoReal === 'on' ? 'encendida' : 'apagada'}`,
-        datos: { accion, zonaId: luz.zonaId },
+        datos: { ...contexto, accion, zonaId: luz.zonaId },
       });
     } finally {
       await this.bd.actuador

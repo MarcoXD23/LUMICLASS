@@ -4,6 +4,8 @@ import {
   esquemaComandoLuz,
   esquemaFiltroEventos,
   esquemaReglaEntrada,
+  esquemaSimPresencia,
+  esquemaSimRespuestaServo,
 } from '../index';
 
 const reglaValida = {
@@ -87,5 +89,26 @@ describe('esquemaFiltroEventos', () => {
       hasta: '2026-10-05T08:00:00Z',
     });
     expect(resultado.success).toBe(false);
+  });
+});
+
+describe('esquemas del simulador', () => {
+  it('acepta presencia con o sin zona', () => {
+    expect(esquemaSimPresencia.safeParse({ presencia: true }).success).toBe(true);
+    expect(esquemaSimPresencia.safeParse({ zonaId: 'zona-frente', presencia: false }).success).toBe(
+      true,
+    );
+  });
+
+  it('rechaza presencia que no sea booleana o conteos negativos', () => {
+    expect(esquemaSimPresencia.safeParse({ presencia: 'si' }).success).toBe(false);
+    expect(esquemaSimPresencia.safeParse({ presencia: true, conteoPersonas: -1 }).success).toBe(
+      false,
+    );
+  });
+
+  it('solo acepta respuestas de servo conocidas', () => {
+    expect(esquemaSimRespuestaServo.safeParse({ respuesta: 'lento' }).success).toBe(true);
+    expect(esquemaSimRespuestaServo.safeParse({ respuesta: 'explota' }).success).toBe(false);
   });
 });
