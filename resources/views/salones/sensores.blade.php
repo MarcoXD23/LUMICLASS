@@ -11,7 +11,7 @@
 
         <p x-show="cargando" class="text-sm text-slate-500">Cargando…</p>
 
-        <ul class="grid gap-3 sm:grid-cols-2">
+        <ul class="grid gap-3 md:grid-cols-2">
             <template x-for="sensor in sensores" :key="sensor.id">
                 <li class="tarjeta space-y-3"
                     :class="sensor.conexion === 'falla' ? 'border-error' : (sensor.conexion === 'inactivo' ? 'border-aviso' : '')">
@@ -23,7 +23,7 @@
                             </span>
                             <div>
                                 <p class="font-semibold" x-text="sensor.nombre"></p>
-                                <p class="text-xs text-slate-500" x-text="`${sensor.zonaNombre} · ${sensor.tipo.toUpperCase()}`"></p>
+                                <p class="text-sm lg:text-xs text-slate-500" x-text="`${sensor.zonaNombre} · ${sensor.tipo.toUpperCase()}`"></p>
                             </div>
                         </div>
                         <span><x-insignia-conexion estado="sensor.conexion" /></span>
@@ -31,7 +31,7 @@
 
                     <dl class="grid grid-cols-2 gap-2 text-sm">
                         <div class="rounded-lg bg-slate-50 p-2">
-                            <dt class="text-xs text-slate-500">Presencia</dt>
+                            <dt class="text-sm lg:text-xs text-slate-500">Presencia</dt>
                             <dd class="font-medium">
                                 <span x-show="sensor.presencia === true" class="flex items-center gap-1 text-ocupado-texto">
                                     <x-icono nombre="persona" clase="size-4" /> Detecta
@@ -43,11 +43,11 @@
                             </dd>
                         </div>
                         <div class="rounded-lg bg-slate-50 p-2">
-                            <dt class="text-xs text-slate-500">Última lectura</dt>
+                            <dt class="text-sm lg:text-xs text-slate-500">Última lectura</dt>
                             <dd class="font-medium" x-text="hace(sensor.ultima_lectura)"></dd>
                         </div>
                         <div class="col-span-2 rounded-lg bg-slate-50 p-2" x-show="sensor.conteo_personas !== null">
-                            <dt class="text-xs text-slate-500">Personas contadas</dt>
+                            <dt class="text-sm lg:text-xs text-slate-500">Personas contadas</dt>
                             <dd class="font-medium" x-text="sensor.conteo_personas"></dd>
                         </div>
                     </dl>

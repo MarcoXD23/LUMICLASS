@@ -51,7 +51,7 @@
         @foreach ($enlaces as $clave => [$texto, $icono, $url])
             <li>
                 <a href="{{ $url }}" @class([
-                    'flex min-h-16 flex-col items-center justify-center gap-1 text-xs font-medium',
+                    'flex min-h-16 flex-col items-center justify-center gap-1 text-sm font-medium',
                     'text-marca-600' => $pagina === $clave,
                     'text-slate-500' => $pagina !== $clave,
                 ]) @if ($pagina === $clave) aria-current="page" @endif>

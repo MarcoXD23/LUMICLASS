@@ -12,7 +12,7 @@
 
         <p x-show="cargando" class="text-sm text-slate-500">Cargando salones…</p>
 
-        <ul class="grid gap-3 sm:grid-cols-2" x-show="!cargando" x-cloak>
+        <ul class="grid gap-3 md:grid-cols-2" x-show="!cargando" x-cloak>
             <template x-for="salon in lista" :key="salon.id">
                 <li class="tarjeta flex flex-col gap-3">
                     <template x-if="editandoId !== salon.id">
@@ -59,7 +59,7 @@
             <h2 id="titulo-nuevo" class="mb-3 flex items-center gap-2 font-semibold">
                 <x-icono nombre="mas" /> Nuevo salón
             </h2>
-            <form class="grid gap-4 sm:grid-cols-[2fr_1fr_1fr_auto] sm:items-end" @submit.prevent="crear" novalidate>
+            <form class="grid gap-4 md:grid-cols-[2fr_1fr_1fr_auto] md:items-end" @submit.prevent="crear" novalidate>
                 <x-campo etiqueta="Nombre" x-model="nuevo.nombre" placeholder="Aula 204" maxlength="100" required
                     error="errores.nombre" />
                 <x-campo etiqueta="Zonas" type="number" min="1" max="10" x-model="nuevo.zonas" error="errores.zonas" />
@@ -67,7 +67,7 @@
                     error="errores.luces_por_zona" />
                 <button type="submit" class="btn btn-primario" :disabled="creando">Crear</button>
             </form>
-            <p class="mt-3 text-xs text-slate-500">Cada luz recibe su servo, cada zona un sensor PIR, y el salón las dos reglas
+            <p class="mt-3 text-sm lg:text-xs text-slate-500">Cada luz recibe su servo, cada zona un sensor PIR, y el salón las dos reglas
                 iniciales (encender con presencia, apagar tras 5 min vacío).</p>
         </section>
     </div>

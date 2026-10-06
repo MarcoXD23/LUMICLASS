@@ -88,16 +88,16 @@
                         </p>
                     </div>
                     <div class="flex items-center gap-2">
-                        <button type="button" class="btn min-h-9 px-3"
+                        <button type="button" class="btn min-h-11 lg:min-h-9 px-3"
                             :class="regla.activa ? 'bg-ocupado-suave text-ocupado-texto' : 'bg-slate-200 text-slate-700'"
                             :aria-pressed="regla.activa" @click="alternar(regla)">
                             <span x-text="regla.activa ? 'Activa' : 'Inactiva'"></span>
                         </button>
-                        <button type="button" class="btn btn-secundario min-h-9 px-3" @click="abrirEdicion(regla)"
+                        <button type="button" class="btn btn-secundario min-h-11 lg:min-h-9 px-3" @click="abrirEdicion(regla)"
                             :aria-label="`Editar ${regla.nombre}`">
                             <x-icono nombre="editar" clase="size-4" />
                         </button>
-                        <button type="button" class="btn btn-secundario min-h-9 px-3 text-error-texto" @click="borrar(regla)"
+                        <button type="button" class="btn btn-secundario min-h-11 lg:min-h-9 px-3 text-error-texto" @click="borrar(regla)"
                             :aria-label="`Borrar ${regla.nombre}`">
                             <x-icono nombre="borrar" clase="size-4" />
                         </button>

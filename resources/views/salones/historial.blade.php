@@ -57,7 +57,7 @@
                     </span>
                     <div class="min-w-0 flex-1">
                         <p class="text-sm" x-text="evento.mensaje"></p>
-                        <p class="mt-0.5 text-xs text-slate-500">
+                        <p class="mt-0.5 text-sm lg:text-xs text-slate-500">
                             <span x-text="fechaHora(evento.fecha)"></span>
                             · <span x-text="etiqueta('evento', evento.tipo)"></span>
                             · <span x-text="etiqueta('origen', evento.origen)"></span>

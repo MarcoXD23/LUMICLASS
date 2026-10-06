@@ -11,7 +11,7 @@
                     Última actualización: <span x-text="hace(estado?.ultima_actualizacion)">…</span>
                 </p>
             </div>
-            <button type="button" class="btn btn-secundario min-h-9 px-3" @click="recargar" aria-label="Actualizar ahora">
+            <button type="button" class="btn btn-secundario min-h-11 lg:min-h-9 px-3" @click="recargar" aria-label="Actualizar ahora">
                 <x-icono nombre="recargar" clase="size-4" />
             </button>
         </div>
@@ -21,7 +21,7 @@
         <template x-if="estado">
             <div class="space-y-4">
                 {{-- Resumen --}}
-                <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                <div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
                     <div class="tarjeta"
                         :class="{
                             'border-ocupado bg-ocupado-suave': estado.ocupacion === 'ocupado',

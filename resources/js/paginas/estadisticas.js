@@ -79,6 +79,8 @@ export function estadisticas(salonId) {
             return (this.datos?.por_dia ?? []).map((dia) => ({
                 ...dia,
                 etiqueta: formatoDia.format(fechaLocal(dia.fecha)),
+                // En celular solo cabe el número del día bajo cada barra.
+                numero: fechaLocal(dia.fecha).getDate(),
                 etiquetaLarga: mayusculaInicial(formatoFecha.format(fechaLocal(dia.fecha))),
                 segundos_utiles: dia.segundos_encendidas - dia.segundos_desperdicio,
             }));

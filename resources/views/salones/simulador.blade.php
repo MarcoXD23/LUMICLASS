@@ -4,7 +4,7 @@
     <div x-data="simulador({{ $salon->id }})" class="space-y-4">
         <x-aviso-conexion />
 
-        <div class="flex items-end justify-between gap-3">
+        <div class="flex flex-col items-start gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
                 <h1 class="flex items-center gap-2 text-2xl font-bold"><x-icono nombre="simulador" clase="size-7" /> Simulador</h1>
                 <p class="text-sm text-slate-600">Hardware simulado: fuerza situaciones y mira cómo reacciona el sistema en
@@ -32,7 +32,7 @@
                         </button>
                         <x-campo etiqueta="Personas (opcional)" type="number" min="0" max="500" x-model="conteo" />
                     </div>
-                    <p class="text-xs text-slate-500">
+                    <p class="text-sm lg:text-xs text-slate-500">
                         Las reglas con espera (p. ej. "vacío durante 5 min") se cumplen solas mientras esta página está abierta.
                         Factor de tiempo actual: <strong x-text="sim?.tiempos.factor_tiempo_reglas ?? '…'"></strong>
                         (cámbialo con LUMICLASS_FACTOR_TIEMPO_REGLAS en .env).
@@ -51,7 +51,7 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-2">
+                        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
                             <button type="button" class="btn btn-secundario" :disabled="trabajando" @click="presencia(true, zona)">
                                 Presencia en esta zona
                             </button>
@@ -71,7 +71,7 @@
                                             <x-insignia-conexion estado="sensor.conexion" />
                                         </div>
                                         <label class="sr-only" :for="`sim-sensor-${sensor.id}`">Conexión del sensor</label>
-                                        <select :id="`sim-sensor-${sensor.id}`" class="campo w-auto min-h-9"
+                                        <select :id="`sim-sensor-${sensor.id}`" class="campo w-auto min-h-11 lg:min-h-9"
                                             :value="sensor.conexion" :disabled="trabajando"
                                             @change="conexionSensor(sensor, $event.target.value)">
                                             <option value="activo">Activo</option>
@@ -95,9 +95,9 @@
                                         </div>
                                         <div class="grid gap-2 sm:grid-cols-3" x-show="luz.actuador">
                                             <div>
-                                                <label class="etiqueta text-xs" :for="`sim-resp-${luz.id}`"
+                                                <label class="etiqueta text-sm lg:text-xs" :for="`sim-resp-${luz.id}`"
                                                     x-text="`${luz.actuador?.nombre}: respuesta`"></label>
-                                                <select :id="`sim-resp-${luz.id}`" class="campo min-h-9"
+                                                <select :id="`sim-resp-${luz.id}`" class="campo min-h-11 lg:min-h-9"
                                                     :value="respuestaDe(luz.actuador?.id)" :disabled="trabajando"
                                                     @change="respuestaServo(luz.actuador, $event.target.value)">
                                                     <option value="ok">Responde bien</option>
@@ -107,8 +107,8 @@
                                                 </select>
                                             </div>
                                             <div>
-                                                <label class="etiqueta text-xs" :for="`sim-con-${luz.id}`">Conexión del servo</label>
-                                                <select :id="`sim-con-${luz.id}`" class="campo min-h-9"
+                                                <label class="etiqueta text-sm lg:text-xs" :for="`sim-con-${luz.id}`">Conexión del servo</label>
+                                                <select :id="`sim-con-${luz.id}`" class="campo min-h-11 lg:min-h-9"
                                                     :value="luz.actuador?.conexion" :disabled="trabajando"
                                                     @change="conexionServo(luz.actuador, $event.target.value)">
                                                     <option value="activo">Activo</option>
@@ -117,11 +117,11 @@
                                                 </select>
                                             </div>
                                             <div>
-                                                <span class="etiqueta text-xs">Interruptor de pared</span>
+                                                <span class="etiqueta text-sm lg:text-xs">Interruptor de pared</span>
                                                 <div class="grid grid-cols-2 gap-1">
-                                                    <button type="button" class="btn btn-encender min-h-9 px-2" :disabled="trabajando"
+                                                    <button type="button" class="btn btn-encender min-h-11 lg:min-h-9 px-2" :disabled="trabajando"
                                                         @click="interruptor(luz, 'encendida')">On</button>
-                                                    <button type="button" class="btn btn-apagar min-h-9 px-2" :disabled="trabajando"
+                                                    <button type="button" class="btn btn-apagar min-h-11 lg:min-h-9 px-2" :disabled="trabajando"
                                                         @click="interruptor(luz, 'apagada')">Off</button>
                                                 </div>
                                             </div>

@@ -13,7 +13,7 @@
             <span x-show="aviso.tipo === 'error'"><x-icono nombre="alerta" /></span>
             <span x-show="aviso.tipo === 'info'"><x-icono nombre="info" /></span>
             <p class="flex-1" x-text="aviso.texto"></p>
-            <button type="button" class="shrink-0 opacity-70 hover:opacity-100" @click="$store.avisos.quitar(aviso.id)"
+            <button type="button" class="-my-2.5 -mr-2 grid size-11 shrink-0 place-items-center opacity-70 hover:opacity-100 lg:m-0 lg:block lg:size-auto" @click="$store.avisos.quitar(aviso.id)"
                 aria-label="Cerrar aviso">
                 <x-icono nombre="cerrar" clase="size-4" />
             </button>

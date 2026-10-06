@@ -21,7 +21,7 @@
         </button>
 
         <p class="text-center text-sm text-slate-600">
-            ¿Ya tienes cuenta? <a href="{{ route('ingresar') }}" class="font-semibold text-marca-600">Ingresa</a>
+            ¿Ya tienes cuenta? <a href="{{ route('ingresar') }}" class="inline-flex min-h-11 items-center font-semibold text-marca-600 lg:inline lg:min-h-0">Ingresa</a>
         </p>
     </form>
 @endsection

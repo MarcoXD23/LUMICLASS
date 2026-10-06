@@ -12,7 +12,7 @@
             {{-- Filtro de periodo: una sola fila, arriba de todo --}}
             <div class="inline-flex rounded-xl border border-slate-300 bg-white p-1" role="group" aria-label="Periodo">
                 @foreach (['hoy' => 'Hoy', '7d' => '7 días', '30d' => '30 días'] as $valor => $texto)
-                    <button type="button" class="btn min-h-9 px-3"
+                    <button type="button" class="btn min-h-11 lg:min-h-9 px-3"
                         :class="rango === '{{ $valor }}' ? 'bg-marca-600 text-white' : 'text-slate-700'"
                         :aria-pressed="rango === '{{ $valor }}'" @click="cambiarRango('{{ $valor }}')">{{ $texto }}</button>
                 @endforeach
@@ -25,21 +25,21 @@
         <template x-if="datos">
             <div class="space-y-4" :class="cargando && 'opacity-60'">
                 {{-- Totales --}}
-                <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                <div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
                     <div class="tarjeta">
                         <p class="titulo-seccion">Luces encendidas</p>
                         <p class="mt-1 text-2xl font-bold" x-text="duracion(totales.segundos_encendidas)"></p>
-                        <p class="text-xs text-slate-500">suma de todas las luces</p>
+                        <p class="text-sm lg:text-xs text-slate-500">suma de todas las luces</p>
                     </div>
                     <div class="tarjeta">
                         <p class="titulo-seccion">Salón ocupado</p>
                         <p class="mt-1 text-2xl font-bold" x-text="duracion(totales.segundos_ocupado)"></p>
-                        <p class="text-xs text-slate-500">alguna zona con gente</p>
+                        <p class="text-sm lg:text-xs text-slate-500">alguna zona con gente</p>
                     </div>
                     <div class="tarjeta" :class="totales.segundos_desperdicio && 'border-serie-2'">
                         <p class="titulo-seccion">Con la zona vacía</p>
                         <p class="mt-1 text-2xl font-bold" x-text="duracion(totales.segundos_desperdicio)"></p>
-                        <p class="text-xs text-slate-500"
+                        <p class="text-sm lg:text-xs text-slate-500"
                             x-text="`${porcentajeDesperdicio}% del tiempo encendidas`"></p>
                     </div>
                     <div class="tarjeta">
@@ -69,7 +69,7 @@
                 <section class="tarjeta" x-show="dias.length > 1" aria-labelledby="titulo-dias">
                     <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
                         <h2 id="titulo-dias" class="font-semibold">Horas encendidas por día</h2>
-                        <button type="button" class="text-sm font-semibold text-marca-600" @click="verTabla = !verTabla"
+                        <button type="button" class="min-h-11 text-sm font-semibold text-marca-600 lg:min-h-0" @click="verTabla = !verTabla"
                             x-text="verTabla ? 'Ver gráfico' : 'Ver como tabla'"></button>
                     </div>
 
@@ -92,7 +92,7 @@
                             <template x-for="paso in [1, 0.5, 0]" :key="paso">
                                 <div class="pointer-events-none absolute inset-x-0 flex translate-y-1/2 items-center"
                                     :style="`bottom: ${32 + paso * 176}px`">
-                                    <span class="w-9 pr-1 text-right text-xs text-slate-500"
+                                    <span class="w-9 pr-1 text-right text-sm lg:text-xs text-slate-500"
                                         x-text="`${+(maximoHorasDia * paso).toFixed(1)} h`"></span>
                                     <span class="h-px flex-1 bg-slate-200"></span>
                                 </div>
@@ -110,7 +110,9 @@
                                         <div class="w-full bg-serie-2 rounded-t-[4px]" x-show="dia.segundos_desperdicio"
                                             :style="`height: ${alto(dia.segundos_desperdicio)}; margin-bottom: 2px`"></div>
                                     </div>
-                                    <span class="mt-2 h-6 whitespace-nowrap text-[11px] text-slate-500"
+                                    <span class="mt-2 h-6 whitespace-nowrap text-sm text-slate-500 lg:hidden"
+                                        x-text="rotular(i) ? dia.numero : ''"></span>
+                                    <span class="mt-2 hidden h-6 whitespace-nowrap text-[11px] text-slate-500 lg:inline"
                                         x-text="rotular(i) ? dia.etiqueta : ''"></span>
                                 </button>
                             </template>
@@ -119,7 +121,7 @@
 
                     <div x-show="verTabla" class="overflow-x-auto">
                         <table class="w-full text-left text-sm">
-                            <thead class="text-xs uppercase text-slate-500">
+                            <thead class="text-sm lg:text-xs uppercase text-slate-500">
                                 <tr>
                                     <th class="py-2">Día</th>
                                     <th class="py-2 text-right">Encendidas</th>
@@ -168,7 +170,7 @@
                     </ul>
                 </section>
 
-                <p class="text-xs text-slate-500">
+                <p class="text-sm lg:text-xs text-slate-500">
                     Los tiempos salen de los cambios registrados desde que se instaló esta versión. Una luz o zona "sin datos" no
                     suma. El consumo en kWh se agregará cuando se confirme la potencia de los focos.
                 </p>

@@ -22,13 +22,13 @@
 
                     {{-- Automático / manual --}}
                     <div class="inline-flex rounded-xl border border-slate-300 p-1" role="group" aria-label="Modo de la zona">
-                        <button type="button" class="btn min-h-9 px-3"
+                        <button type="button" class="btn min-h-11 lg:min-h-9 px-3"
                             :class="zona.modo === 'automatico' ? 'bg-marca-600 text-white' : 'text-slate-700'"
                             :aria-pressed="zona.modo === 'automatico'" :disabled="ocupado(`modo-${zona.id}`)"
                             @click="cambiarModo(zona, 'automatico')">
                             <x-icono nombre="automatico" clase="size-4" /> Automático
                         </button>
-                        <button type="button" class="btn min-h-9 px-3"
+                        <button type="button" class="btn min-h-11 lg:min-h-9 px-3"
                             :class="zona.modo === 'manual' ? 'bg-slate-700 text-white' : 'text-slate-700'"
                             :aria-pressed="zona.modo === 'manual'" :disabled="ocupado(`modo-${zona.id}`)"
                             @click="cambiarModo(zona, 'manual')">
@@ -41,16 +41,16 @@
                 <div class="grid grid-cols-2 gap-2">
                     <button type="button" class="btn btn-encender" :disabled="ocupado(`zona-${zona.id}`)"
                         @click="ordenarZona(zona, 'encender')">
-                        <x-icono nombre="foco" /> Encender zona
+                        <x-icono nombre="foco" class="hidden sm:block" /> Encender zona
                     </button>
                     <button type="button" class="btn btn-apagar" :disabled="ocupado(`zona-${zona.id}`)"
                         @click="ordenarZona(zona, 'apagar')">
-                        <x-icono nombre="foco" /> Apagar zona
+                        <x-icono nombre="foco" class="hidden sm:block" /> Apagar zona
                     </button>
                 </div>
 
                 {{-- Cada luz --}}
-                <ul class="grid gap-2 sm:grid-cols-2">
+                <ul class="grid gap-2 md:grid-cols-2">
                     <template x-for="luz in zona.luces" :key="luz.id">
                         <li class="rounded-xl border p-3"
                             :class="{
@@ -63,23 +63,23 @@
                                 <span><x-insignia-luz estado="luz.estado_real" /></span>
                             </div>
 
-                            <p class="mt-1 text-xs text-slate-600" x-show="luz.actuador?.ocupado">
+                            <p class="mt-1 text-sm lg:text-xs text-slate-600" x-show="luz.actuador?.ocupado">
                                 Servo trabajando… esperando confirmación.
                             </p>
-                            <p class="mt-1 text-xs text-error-texto"
+                            <p class="mt-1 text-sm lg:text-xs text-error-texto"
                                 x-show="luz.actuador && luz.actuador.conexion !== 'activo'"
                                 x-text="`Servo ${etiqueta('conexion', luz.actuador?.conexion).toLowerCase()}: no se puede accionar.`"></p>
-                            <p class="mt-1 text-xs text-aviso-texto"
+                            <p class="mt-1 text-sm lg:text-xs text-aviso-texto"
                                 x-show="luz.estado_real === 'desconocida' && luz.actuador?.ultimo_resultado && luz.actuador.ultimo_resultado !== 'ok'"
                                 x-text="luz.actuador?.ultimo_resultado"></p>
 
                             <div class="mt-3 grid grid-cols-2 gap-2">
-                                <button type="button" class="btn btn-encender min-h-10"
+                                <button type="button" class="btn btn-encender min-h-11 lg:min-h-10"
                                     :disabled="ocupado(`luz-${luz.id}`) || luz.actuador?.ocupado"
                                     @click="ordenarLuz(luz, 'encender')" :aria-label="`Encender ${luz.nombre}`">
                                     Encender
                                 </button>
-                                <button type="button" class="btn btn-apagar min-h-10"
+                                <button type="button" class="btn btn-apagar min-h-11 lg:min-h-10"
                                     :disabled="ocupado(`luz-${luz.id}`) || luz.actuador?.ocupado"
                                     @click="ordenarLuz(luz, 'apagar')" :aria-label="`Apagar ${luz.nombre}`">
                                     Apagar

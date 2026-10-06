@@ -17,7 +17,7 @@
         </button>
 
         <p class="text-center text-sm text-slate-600">
-            ¿No tienes cuenta? <a href="{{ route('registro') }}" class="font-semibold text-marca-600">Regístrate</a>
+            ¿No tienes cuenta? <a href="{{ route('registro') }}" class="inline-flex min-h-11 items-center font-semibold text-marca-600 lg:inline lg:min-h-0">Regístrate</a>
         </p>
     </form>
 @endsection
