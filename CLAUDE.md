@@ -68,18 +68,18 @@ Debe distinguirse a simple vista: ocupado/vacío, luces on/off, automático/manu
 
 ## Estado actual (2026-10-06)
 
-| Fase                      | Estado                                                                                                                        |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| 1 Análisis                | Completada (versión ampliada)                                                                                                 |
-| 2 Arquitectura            | Hecha; falta agregar autenticación, roles y borrado lógico a `docs/ARQUITECTURA.md`                                           |
-| 3 Estructura              | Completada                                                                                                                    |
-| 4 Autenticación           | **Pendiente**                                                                                                                 |
-| 5 Backend del salón       | Hecho; falta adaptarlo al borrado lógico (hoy `DELETE /reglas`, `PUT /reglas` sobrescribe y la limpieza diaria borra eventos) |
-| 6 Simulador y reglas      | Completada                                                                                                                    |
-| 7 Frontend                | Lógica completa; estilo visual PROPUESTA hasta tener el diseño                                                                |
-| 8 Tiempo real e historial | Completada; falta registrar inicios de sesión                                                                                 |
-| 9 Hardware real           | En pausa hasta tener el hardware                                                                                              |
-| 10 Pruebas y presentación | Pendiente                                                                                                                     |
+| Fase                      | Estado                                                                                              |
+| ------------------------- | --------------------------------------------------------------------------------------------------- |
+| 1 Análisis                | Completada (versión ampliada)                                                                       |
+| 2 Arquitectura            | Completada (incluye autenticación, roles y borrado lógico)                                          |
+| 3 Estructura              | Completada                                                                                          |
+| 4 Autenticación           | Completada (registro, login, recuperación simulada, roles, sesiones en BD)                          |
+| 5 Backend del salón       | Completada (con borrado lógico y versiones)                                                         |
+| 6 Simulador y reglas      | Completada                                                                                          |
+| 7 Frontend                | Lógica completa; estilo visual PROPUESTA hasta tener el diseño de Figma                             |
+| 8 Tiempo real e historial | Completada (incluye inicios de sesión)                                                              |
+| 9 Hardware real           | En pausa hasta tener el hardware                                                                    |
+| 10 Presentación           | Completada: README, `docs/GUIA_DEMO.md` (demo y guion de pruebas), `npm run dev:red` para celulares |
 
 ## Decisiones del equipo
 
@@ -89,4 +89,6 @@ Debe distinguirse a simple vista: ocupado/vacío, luces on/off, automático/manu
 - Fecha de entrega: 2026-10-06. CONFIRMADO.
 - Borrado lógico: aplica a datos de configuración (usuarios, reglas, zonas, luces, sensores, servos) con versiones; los cambios de estado quedan como eventos que nunca se borran. Sin limpieza de eventos antiguos; órdenes duplicadas y tokens vencidos se marcan como vencidos. PROPUESTA.
 
-Pendiente: forma de presentación (en vivo / simulador / video, WiFi, celular), capturas o acceso al diseño en Figma.
+- Presentación: en vivo con simulador desde un portátil y celulares en la misma WiFi. CONFIRMADO.
+
+Pendiente: diseño de Figma (capturas o acceso) y hardware real; confirmar con Juan David la interpretación del rol admin.
