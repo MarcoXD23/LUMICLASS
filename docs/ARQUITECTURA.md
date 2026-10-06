@@ -31,6 +31,9 @@
 - **Por qué:** reconexión automática, HTTP normal, sin librerías y fácil de depurar. El flujo es casi
   siempre servidor → cliente. Si SSE falla, el cliente pasa a consultar cada 5 s (polling).
 - **Prueba:** dos navegadores abiertos; encender una luz en uno y verla cambiar en el otro en < 1 s.
+- **Implementado (Fase 7):** cada evento del historial se envía como `event: evento`; el navegador agrupa los
+  avisos (300 ms) y recarga lo que muestra. Latido cada 15 s, máximo 50 conexiones (503 si se supera).
+  Con SSE activo el polling baja a 30 s (respaldo); sin SSE, 5 s. El encabezado muestra "En vivo" o "Reconectando…".
 - MQTT se reserva para backend ↔ placa (sección 7), no para el navegador.
 
 ## 3. Estructura de carpetas
@@ -90,7 +93,7 @@ LUMICLASS/
 | POST                | `/luces/:id/comando` · `/zonas/:id/comando`         | `{ accion: "encender" \| "apagar", idSolicitud }` |
 | GET/POST/PUT/DELETE | `/reglas[/:id]`                                     | Gestión de reglas                                 |
 | GET                 | `/eventos?tipo&desde&hasta&pagina`                  | Historial con filtros                             |
-| GET                 | `/estadisticas?rango`                               | Horas encendidas, ocupación, número de fallas     |
+| GET                 | `/estadisticas?desde&hasta`                         | Horas encendidas, ocupación, número de fallas     |
 | GET                 | `/tiempo-real`                                      | Flujo SSE                                         |
 | POST                | `/sim/...`                                          | Solo si `DRIVER=simulado` (sección 6)             |
 

@@ -2,10 +2,9 @@ import { api } from '../api/recursos';
 import { AvisoConexion } from '../componentes/AvisoConexion';
 import { Cargando, MensajeError, SinElementos } from '../componentes/EstadoCarga';
 import { Insignia } from '../componentes/Insignia';
-import { useConsulta } from '../hooks/useConsulta';
+import { useDatosEnVivo } from '../hooks/useDatosEnVivo';
 import { describirConexion, describirOcupacion } from '../utilidades/estados';
 import { fechaYHora, haceCuanto } from '../utilidades/formatoFecha';
-import { INTERVALO_ACTUALIZACION_MS } from './Inicio';
 
 const NOMBRE_TIPO: Record<string, string> = {
   pir: 'Movimiento (PIR)',
@@ -16,7 +15,7 @@ const NOMBRE_TIPO: Record<string, string> = {
 
 /** Estado de cada sensor: conexión, presencia y última lectura. */
 export function Sensores() {
-  const consulta = useConsulta(api.estadoSalon, { intervaloMs: INTERVALO_ACTUALIZACION_MS });
+  const consulta = useDatosEnVivo(api.estadoSalon);
   const { datos: estado } = consulta;
   if (consulta.cargando && !estado) return <Cargando texto="Cargando sensores…" />;
   if (!estado) return <MensajeError mensaje={consulta.error?.message ?? 'No se pudo cargar'} />;

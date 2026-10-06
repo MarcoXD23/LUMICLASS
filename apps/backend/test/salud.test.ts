@@ -44,6 +44,9 @@ describe('leerEntorno', () => {
       TIEMPO_MAX_ACTUADOR_MS: 3000,
       INTERVALO_REGLAS_MS: 60_000,
       SIM_DEMORA_LENTO_MS: 2000,
+      MAX_CONEXIONES_SSE: 50,
+      LATIDO_SSE_MS: 15_000,
+      DIAS_RETENCION_EVENTOS: 90,
     });
   });
 

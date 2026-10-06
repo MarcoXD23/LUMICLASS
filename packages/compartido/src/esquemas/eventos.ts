@@ -15,7 +15,8 @@ export const esquemaTipoEvento = z.enum(TIPOS_EVENTO);
 export type TipoEvento = z.infer<typeof esquemaTipoEvento>;
 
 export const ORIGENES_EVENTO = ['usuario', 'regla', 'sistema', 'simulador'] as const;
-export type OrigenEvento = (typeof ORIGENES_EVENTO)[number];
+export const esquemaOrigenEvento = z.enum(ORIGENES_EVENTO);
+export type OrigenEvento = z.infer<typeof esquemaOrigenEvento>;
 
 export const SEVERIDADES_EVENTO = ['info', 'advertencia', 'error'] as const;
 export type SeveridadEvento = (typeof SEVERIDADES_EVENTO)[number];
@@ -36,6 +37,7 @@ export interface EventoDto {
 export const esquemaFiltroEventos = z
   .strictObject({
     tipo: esquemaTipoEvento.optional(),
+    origen: esquemaOrigenEvento.optional(),
     desde: z.iso.datetime({ offset: true }).optional(),
     hasta: z.iso.datetime({ offset: true }).optional(),
     pagina: z.coerce.number().int().min(1).max(100_000).default(1),

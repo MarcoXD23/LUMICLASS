@@ -17,6 +17,12 @@ const esquemaEntorno = z.object({
   INTERVALO_REGLAS_MS: z.coerce.number().int().min(1000).max(3_600_000).default(60_000),
   /** Demora del servo simulado en modo "lento". */
   SIM_DEMORA_LENTO_MS: z.coerce.number().int().min(0).max(30_000).default(2000),
+  /** Máximo de pantallas conectadas en tiempo real (SSE) a la vez. */
+  MAX_CONEXIONES_SSE: z.coerce.number().int().min(1).max(1000).default(50),
+  /** Cada cuánto se envía un latido por SSE para que la conexión no se corte. */
+  LATIDO_SSE_MS: z.coerce.number().int().min(1000).max(120_000).default(15_000),
+  /** Días que se guardan los eventos del historial. */
+  DIAS_RETENCION_EVENTOS: z.coerce.number().int().min(1).max(3650).default(90),
 });
 
 export type Entorno = z.infer<typeof esquemaEntorno>;

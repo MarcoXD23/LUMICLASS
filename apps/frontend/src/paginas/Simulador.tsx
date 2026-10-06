@@ -7,10 +7,8 @@ import { Cargando, MensajeError } from '../componentes/EstadoCarga';
 import { Insignia } from '../componentes/Insignia';
 import { TarjetaZona } from '../componentes/TarjetaZona';
 import { useAccion } from '../hooks/useAccion';
-import { useConsulta } from '../hooks/useConsulta';
+import { useDatosEnVivo } from '../hooks/useDatosEnVivo';
 import { describirConexion, describirLuz, TEXTO_RESPUESTA_SERVO } from '../utilidades/estados';
-
-const INTERVALO_MS = 3000;
 
 type Orden =
   | { tipo: 'presencia'; zonaId: string | null; presencia: boolean }
@@ -36,8 +34,8 @@ function enviar(orden: Orden) {
 
 /** Panel para probar el sistema sin hardware: presencia, fallas y respuesta de los servos. */
 export function Simulador() {
-  const salon = useConsulta(api.estadoSalon, { intervaloMs: INTERVALO_MS });
-  const simulador = useConsulta(api.simulador.estado, { intervaloMs: INTERVALO_MS });
+  const salon = useDatosEnVivo(api.estadoSalon);
+  const simulador = useDatosEnVivo(api.simulador.estado);
   const recargarTodo = async () => {
     await Promise.all([salon.recargar(), simulador.recargar()]);
   };

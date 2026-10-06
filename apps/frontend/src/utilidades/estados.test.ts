@@ -45,5 +45,7 @@ describe('formato de fechas', () => {
     expect(duracionLegible(300)).toBe('5 min');
     expect(duracionLegible(90)).toBe('1 min 30 s');
     expect(duracionLegible(45)).toBe('45 s');
+    expect(duracionLegible(5400)).toBe('1 h 30 min');
+    expect(duracionLegible(7200)).toBe('2 h');
   });
 });

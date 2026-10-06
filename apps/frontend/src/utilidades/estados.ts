@@ -1,5 +1,8 @@
 import type {
   Conexion,
+  EventoDto,
+  OrigenEvento,
+  TipoEvento,
   EstadoLuz,
   ModoZona,
   RespuestaServo,
@@ -10,8 +13,10 @@ import {
   CircleCheck,
   CircleHelp,
   Hand,
+  Info,
   Lightbulb,
   LightbulbOff,
+  ListChecks,
   Timer,
   TriangleAlert,
   User,
@@ -95,3 +100,46 @@ export const TEXTO_RESPUESTA_SERVO: Record<RespuestaServo, string> = {
 };
 
 export const ICONO_ESPERA = Timer;
+
+export const TEXTO_TIPO_EVENTO: Record<TipoEvento, string> = {
+  luz_encendida: 'Luz encendida',
+  luz_apagada: 'Luz apagada',
+  presencia_detectada: 'Presencia detectada',
+  salon_vacio: 'Zona sin presencia',
+  modo_cambiado: 'Cambio de modo',
+  regla_cambiada: 'Cambio en reglas',
+  error_actuador: 'Error de servo',
+  error_sensor: 'Error de sensor',
+  sistema: 'Sistema',
+};
+
+export const TEXTO_ORIGEN: Record<OrigenEvento, string> = {
+  usuario: 'Usuario',
+  regla: 'Regla automática',
+  sistema: 'Sistema',
+  simulador: 'Simulador',
+};
+
+const ICONO_TIPO_EVENTO: Record<TipoEvento, { icono: LucideIcon; tono: Tono }> = {
+  luz_encendida: { icono: Lightbulb, tono: 'luzOn' },
+  luz_apagada: { icono: LightbulbOff, tono: 'luzOff' },
+  presencia_detectada: { icono: User, tono: 'ocupado' },
+  salon_vacio: { icono: UserX, tono: 'vacio' },
+  modo_cambiado: { icono: Bot, tono: 'automatico' },
+  regla_cambiada: { icono: ListChecks, tono: 'neutro' },
+  error_actuador: { icono: TriangleAlert, tono: 'error' },
+  error_sensor: { icono: TriangleAlert, tono: 'error' },
+  sistema: { icono: Info, tono: 'neutro' },
+};
+
+/** Ícono y color de un evento del historial; la severidad manda sobre el tipo. */
+export function describirEvento(evento: Pick<EventoDto, 'tipo' | 'severidad'>): Descripcion {
+  const base = ICONO_TIPO_EVENTO[evento.tipo] ?? { icono: Info, tono: 'neutro' as const };
+  const tono: Tono =
+    evento.severidad === 'error'
+      ? 'error'
+      : evento.severidad === 'advertencia'
+        ? 'advertencia'
+        : base.tono;
+  return { texto: TEXTO_TIPO_EVENTO[evento.tipo] ?? evento.tipo, icono: base.icono, tono };
+}

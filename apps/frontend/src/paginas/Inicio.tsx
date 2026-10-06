@@ -6,15 +6,13 @@ import { Insignia } from '../componentes/Insignia';
 import { ListaAlertas } from '../componentes/ListaAlertas';
 import { TarjetaEstado } from '../componentes/TarjetaEstado';
 import { TarjetaZona } from '../componentes/TarjetaZona';
-import { useConsulta } from '../hooks/useConsulta';
+import { useDatosEnVivo } from '../hooks/useDatosEnVivo';
 import { describirConexion, describirLuz, describirOcupacion } from '../utilidades/estados';
 import { haceCuanto } from '../utilidades/formatoFecha';
 
-export const INTERVALO_ACTUALIZACION_MS = 5000;
-
 /** Dashboard: estado general del salón de un vistazo. */
 export function Inicio() {
-  const consulta = useConsulta(api.estadoSalon, { intervaloMs: INTERVALO_ACTUALIZACION_MS });
+  const consulta = useDatosEnVivo(api.estadoSalon);
   const { datos: estado } = consulta;
 
   if (consulta.cargando && !estado) return <Cargando texto="Cargando estado del salón…" />;

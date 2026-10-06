@@ -30,7 +30,7 @@ function sentenciasDeMigracion(): string[] {
  * - El reloj es manual: el tiempo solo avanza con `avanzar(ms)`.
  */
 export async function crearAppDePrueba<D extends DriverHardware = DriverEnMemoria>(
-  opciones: { driver?: D; sinDatos?: boolean } = {},
+  opciones: { driver?: D; sinDatos?: boolean; entorno?: Record<string, string> } = {},
 ) {
   const carpeta = mkdtempSync(join(tmpdir(), 'lumiclass-prueba-'));
   const url = `file:${join(carpeta, 'prueba.db')}`;
@@ -43,7 +43,11 @@ export async function crearAppDePrueba<D extends DriverHardware = DriverEnMemori
   const driver = (opciones.driver ?? new DriverEnMemoria()) as D;
   await driver.iniciar();
   const reloj = new RelojManual();
-  const entorno = leerEntorno({ DATABASE_URL: url, TIEMPO_MAX_ACTUADOR_MS: '200' });
+  const entorno = leerEntorno({
+    DATABASE_URL: url,
+    TIEMPO_MAX_ACTUADOR_MS: '200',
+    ...opciones.entorno,
+  });
   const app = construirApp({ entorno, bd, driver, reloj });
   await app.ready();
   const { servicios } = app;

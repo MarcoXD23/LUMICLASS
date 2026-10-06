@@ -8,6 +8,7 @@ import type {
 } from '@lumiclass/compartido';
 import type { BaseDatos } from '../db/cliente';
 import type { Evento } from '../generated/prisma/client';
+import type { Difusor } from './difusor';
 
 export interface NuevoEvento {
   tipo: TipoEvento;
@@ -46,7 +47,11 @@ export function aEventoDto(evento: Evento): EventoDto {
 
 /** Registro único del historial: todo cambio relevante pasa por aquí. */
 export class ServicioEventos {
-  constructor(private readonly bd: BaseDatos) {}
+  constructor(
+    private readonly bd: BaseDatos,
+    /** Si existe, cada evento nuevo se publica (lo usa el tiempo real). */
+    private readonly difusor?: Difusor<EventoDto>,
+  ) {}
 
   async registrar(evento: NuevoEvento): Promise<EventoDto> {
     const creado = await this.bd.evento.create({
@@ -60,12 +65,15 @@ export class ServicioEventos {
         datos: JSON.stringify(evento.datos ?? {}),
       },
     });
-    return aEventoDto(creado);
+    const dto = aEventoDto(creado);
+    this.difusor?.publicar(dto);
+    return dto;
   }
 
   async listar(filtro: FiltroEventos): Promise<PaginaEventos> {
     const where = {
       ...(filtro.tipo ? { tipo: filtro.tipo } : {}),
+      ...(filtro.origen ? { origen: filtro.origen } : {}),
       ...(filtro.desde || filtro.hasta
         ? {
             fecha: {

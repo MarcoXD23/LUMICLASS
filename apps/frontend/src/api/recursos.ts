@@ -1,9 +1,13 @@
 import type {
   AccionLuz,
+  EstadisticasDto,
   EstadoSalonDto,
   EstadoSimuladorDto,
+  FiltroEstadisticas,
+  FiltroEventos,
   LuzDto,
   ModoZona,
+  PaginaEventos,
   RespuestaComandoLuz,
   RespuestaComandoZona,
   RespuestaSalud,
@@ -16,6 +20,16 @@ import type {
 } from '@lumiclass/compartido';
 import { pedir } from './cliente';
 
+/** Convierte un objeto de filtros en "?a=1&b=2" (omite los vacíos). */
+function consulta(filtros: Record<string, string | number | undefined>): string {
+  const parametros = new URLSearchParams();
+  for (const [clave, valor] of Object.entries(filtros)) {
+    if (valor !== undefined && valor !== '') parametros.set(clave, String(valor));
+  }
+  const texto = parametros.toString();
+  return texto ? `?${texto}` : '';
+}
+
 /** Identificador único por orden: si llega dos veces, la API la ejecuta una sola vez. */
 const nuevoIdSolicitud = () => crypto.randomUUID();
 
@@ -26,6 +40,10 @@ export const api = {
   luces: (senal?: AbortSignal) => pedir<LuzDto[]>('/luces', { senal }),
   sensores: (senal?: AbortSignal) => pedir<SensorDto[]>('/sensores', { senal }),
   reglas: (senal?: AbortSignal) => pedir<ReglaDto[]>('/reglas', { senal }),
+  eventos: (filtro: Partial<FiltroEventos>, senal?: AbortSignal) =>
+    pedir<PaginaEventos>(`/eventos${consulta(filtro)}`, { senal }),
+  estadisticas: (filtro: Partial<FiltroEstadisticas>, senal?: AbortSignal) =>
+    pedir<EstadisticasDto>(`/estadisticas${consulta(filtro)}`, { senal }),
 
   comandarLuz: (luzId: string, accion: AccionLuz) =>
     pedir<RespuestaComandoLuz>(`/luces/${encodeURIComponent(luzId)}/comando`, {

@@ -68,3 +68,17 @@ describe('GET /api/v1/eventos', () => {
     expect((await listar('?inventado=1')).codigo).toBe(400);
   });
 });
+
+describe('GET /api/v1/eventos?origen', () => {
+  it('filtra por quién originó el evento', async () => {
+    await prueba.bd.evento.create({
+      data: { tipo: 'luz_encendida', origen: 'regla', mensaje: 'r' },
+    });
+    await prueba.bd.evento.create({
+      data: { tipo: 'luz_encendida', origen: 'usuario', mensaje: 'u' },
+    });
+    const { cuerpo } = await listar('?origen=regla');
+    expect(cuerpo.datos.map((e) => e.mensaje)).toEqual(['r']);
+    expect((await listar('?origen=fantasma')).codigo).toBe(400);
+  });
+});

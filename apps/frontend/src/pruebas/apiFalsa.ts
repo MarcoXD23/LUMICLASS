@@ -121,7 +121,10 @@ type Manejador = (cuerpo: unknown) => Respuesta | Promise<Respuesta>;
 
 export interface LlamadaRegistrada {
   metodo: string;
+  /** Ruta sin /api/v1 ni parámetros. */
   ruta: string;
+  /** Parámetros de la URL (?a=1&b=2). */
+  parametros: URLSearchParams;
   cuerpo: unknown;
 }
 
@@ -138,7 +141,7 @@ export function instalarApiFalsa(rutas: Record<string, Respuesta | Manejador>) {
     const metodo = opciones.method ?? 'GET';
     const cuerpo =
       typeof opciones.body === 'string' ? (JSON.parse(opciones.body) as unknown) : undefined;
-    llamadas.push({ metodo, ruta, cuerpo });
+    llamadas.push({ metodo, ruta, parametros: url.searchParams, cuerpo });
 
     const definida = rutas[`${metodo} ${ruta}`];
     const respuesta: Respuesta = !definida
@@ -157,3 +160,48 @@ export function instalarApiFalsa(rutas: Record<string, Respuesta | Manejador>) {
 
 /** Manejador que simula una red caída. */
 export const redCaida: Manejador = () => Promise.reject(new TypeError('Failed to fetch'));
+
+/**
+ * EventSource falso para probar el tiempo real sin servidor.
+ * Uso: `vi.stubGlobal('EventSource', EventSourceFalso)` y luego
+ * `EventSourceFalso.ultima().emitir('evento', {...})`.
+ */
+export class EventSourceFalso {
+  static instancias: EventSourceFalso[] = [];
+  static ultima(): EventSourceFalso {
+    const ultima = EventSourceFalso.instancias.at(-1);
+    if (!ultima) throw new Error('No se abrió ninguna conexión de tiempo real');
+    return ultima;
+  }
+
+  readyState = 0;
+  onerror: ((evento: Event) => void) | null = null;
+  private readonly oyentes = new Map<string, ((evento: MessageEvent<string>) => void)[]>();
+
+  constructor(readonly url: string) {
+    EventSourceFalso.instancias.push(this);
+  }
+
+  addEventListener(tipo: string, oyente: (evento: MessageEvent<string>) => void): void {
+    this.oyentes.set(tipo, [...(this.oyentes.get(tipo) ?? []), oyente]);
+  }
+
+  close(): void {
+    this.readyState = 2;
+  }
+
+  /** Simula un mensaje del servidor (`datos` se envía como JSON, o tal cual si es texto). */
+  emitir(tipo: string, datos: unknown): void {
+    this.readyState = 1;
+    const data = typeof datos === 'string' ? datos : JSON.stringify(datos);
+    for (const oyente of this.oyentes.get(tipo) ?? []) {
+      oyente(new MessageEvent(tipo, { data }));
+    }
+  }
+
+  /** Simula un corte. `cerrada` = el servidor rechazó la conexión (no reintenta solo). */
+  fallar(cerrada = false): void {
+    this.readyState = cerrada ? 2 : 0;
+    this.onerror?.(new Event('error'));
+  }
+}

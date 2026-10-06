@@ -1,5 +1,6 @@
 import {
   FlaskConical,
+  History,
   House,
   ListChecks,
   Radar,
@@ -19,6 +20,7 @@ const ENLACES: Enlace[] = [
   { ruta: '/control', texto: 'Control', icono: SlidersHorizontal },
   { ruta: '/sensores', texto: 'Sensores', icono: Radar },
   { ruta: '/reglas', texto: 'Reglas', icono: ListChecks },
+  { ruta: '/historial', texto: 'Historial', icono: History },
 ];
 
 const ENLACE_SIMULADOR: Enlace = { ruta: '/simulador', texto: 'Simulador', icono: FlaskConical };

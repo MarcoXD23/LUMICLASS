@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   esquemaCambioModo,
   esquemaComandoLuz,
+  esquemaFiltroEstadisticas,
   esquemaFiltroEventos,
   esquemaReglaEntrada,
   esquemaSimPresencia,
@@ -110,5 +111,28 @@ describe('esquemas del simulador', () => {
   it('solo acepta respuestas de servo conocidas', () => {
     expect(esquemaSimRespuestaServo.safeParse({ respuesta: 'lento' }).success).toBe(true);
     expect(esquemaSimRespuestaServo.safeParse({ respuesta: 'explota' }).success).toBe(false);
+  });
+});
+
+describe('filtros de historial y estadísticas', () => {
+  it('acepta filtrar eventos por origen', () => {
+    expect(esquemaFiltroEventos.safeParse({ origen: 'regla' }).success).toBe(true);
+    expect(esquemaFiltroEventos.safeParse({ origen: 'marciano' }).success).toBe(false);
+  });
+
+  it('rechaza rangos de estadísticas invertidos o mayores a un año', () => {
+    expect(esquemaFiltroEstadisticas.safeParse({}).success).toBe(true);
+    expect(
+      esquemaFiltroEstadisticas.safeParse({
+        desde: '2026-10-05T12:00:00Z',
+        hasta: '2026-10-05T11:00:00Z',
+      }).success,
+    ).toBe(false);
+    expect(
+      esquemaFiltroEstadisticas.safeParse({
+        desde: '2024-01-01T00:00:00Z',
+        hasta: '2026-01-01T00:00:00Z',
+      }).success,
+    ).toBe(false);
   });
 });

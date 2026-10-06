@@ -6,7 +6,7 @@ import { AvisoConexion } from '../componentes/AvisoConexion';
 import { Cargando, MensajeError, SinElementos } from '../componentes/EstadoCarga';
 import { Insignia } from '../componentes/Insignia';
 import { useAccion } from '../hooks/useAccion';
-import { useConsulta } from '../hooks/useConsulta';
+import { useDatosEnVivo } from '../hooks/useDatosEnVivo';
 import { describirLuz, describirOcupacion } from '../utilidades/estados';
 import { duracionLegible } from '../utilidades/formatoFecha';
 import { FormularioRegla } from './FormularioRegla';
@@ -38,8 +38,12 @@ function explicarRegla(regla: ReglaDto, nombreZona: string | null): string {
 
 /** Reglas de automatización: ver, crear, editar, activar/desactivar y borrar. */
 export function Reglas() {
-  const reglas = useConsulta(api.reglas);
-  const zonas = useConsulta(api.zonas);
+  const reglas = useDatosEnVivo(api.reglas, {
+    filtrarEvento: (evento) => evento.tipo === 'regla_cambiada',
+  });
+  const zonas = useDatosEnVivo(api.zonas, {
+    filtrarEvento: (evento) => evento.tipo === 'modo_cambiado',
+  });
   const [editando, setEditando] = useState<ReglaDto | 'nueva' | null>(null);
 
   const recargar = reglas.recargar;

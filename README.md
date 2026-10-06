@@ -29,15 +29,16 @@ La primera vez, `npm run dev` crea la base de datos SQLite (`apps/backend/prisma
 
 ## Pantallas
 
-| Pantalla  | Qué muestra o permite                                                                |
-| --------- | ------------------------------------------------------------------------------------ |
-| Inicio    | Salón ocupado/vacío, luces encendidas, sensores, hardware, alertas y estado por zona |
-| Control   | Encender/apagar cada luz o toda una zona y cambiar entre automático y manual         |
-| Sensores  | Conexión, presencia y última lectura de cada sensor                                  |
-| Reglas    | Crear, editar, activar/desactivar y borrar reglas automáticas                        |
-| Simulador | Forzar presencia, fallas de sensor, respuesta de los servos e interruptor a mano     |
+| Pantalla  | Qué muestra o permite                                                                            |
+| --------- | ------------------------------------------------------------------------------------------------ |
+| Inicio    | Salón ocupado/vacío, luces encendidas, sensores, hardware, alertas y estado por zona             |
+| Control   | Encender/apagar cada luz o toda una zona y cambiar entre automático y manual                     |
+| Sensores  | Conexión, presencia y última lectura de cada sensor                                              |
+| Reglas    | Crear, editar, activar/desactivar y borrar reglas automáticas                                    |
+| Historial | Eventos con filtros (tipo, origen, fechas) y estadísticas: tiempo encendido, ocupación y errores |
+| Simulador | Forzar presencia, fallas de sensor, respuesta de los servos e interruptor a mano                 |
 
-Los datos se actualizan cada 5 s. Si el servidor no responde, la app lo avisa y muestra los últimos datos marcados como desactualizados. El aspecto visual es **PROPUESTA** hasta tener las capturas de Figma en `diseno/`.
+Los datos se actualizan **en tiempo real** (SSE): el encabezado muestra "En vivo". Si el tiempo real se corta, la app consulta cada 5 s y muestra "Reconectando…". Si el servidor no responde, la app lo avisa y muestra los últimos datos marcados como desactualizados. El aspecto visual es **PROPUESTA** hasta tener las capturas de Figma en `diseno/`.
 
 ## Scripts
 
@@ -54,17 +55,19 @@ Los datos se actualizan cada 5 s. Si el servidor no responde, la app lo avisa y 
 
 ## API (`/api/v1`)
 
-| Método              | Ruta                                         | Uso                                                  |
-| ------------------- | -------------------------------------------- | ---------------------------------------------------- |
-| GET                 | `/salud`                                     | Estado de la API, base de datos y hardware           |
-| GET                 | `/salon/estado`                              | Todo el dashboard en una llamada                     |
-| GET                 | `/zonas` · `/luces` · `/sensores` (y `/:id`) | Listas y detalle                                     |
-| PATCH               | `/zonas/:id/modo`                            | `{ "modo": "automatico" }` o `"manual"`              |
-| POST                | `/luces/:id/comando` · `/zonas/:id/comando`  | `{ "accion": "encender", "idSolicitud": "abc123…" }` |
-| GET/POST/PUT/DELETE | `/reglas` · `/reglas/:id`                    | Reglas de automatización                             |
-| GET                 | `/eventos?tipo&desde&hasta&pagina&porPagina` | Historial                                            |
+| Método              | Ruta                                                | Uso                                                                                                    |
+| ------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| GET                 | `/salud`                                            | Estado de la API, base de datos y hardware                                                             |
+| GET                 | `/salon/estado`                                     | Todo el dashboard en una llamada                                                                       |
+| GET                 | `/zonas` · `/luces` · `/sensores` (y `/:id`)        | Listas y detalle                                                                                       |
+| PATCH               | `/zonas/:id/modo`                                   | `{ "modo": "automatico" }` o `"manual"`                                                                |
+| POST                | `/luces/:id/comando` · `/zonas/:id/comando`         | `{ "accion": "encender", "idSolicitud": "abc123…" }`                                                   |
+| GET/POST/PUT/DELETE | `/reglas` · `/reglas/:id`                           | Reglas de automatización                                                                               |
+| GET                 | `/eventos?tipo&origen&desde&hasta&pagina&porPagina` | Historial                                                                                              |
+| GET                 | `/estadisticas?desde&hasta`                         | Tiempo encendido por luz, ocupación por zona, acciones por origen, errores (por defecto: últimas 24 h) |
+| GET                 | `/tiempo-real`                                      | Flujo SSE: un `event: evento` por cada evento nuevo del historial                                      |
 
-Los errores siempre responden `{ "error": { "codigo", "mensaje" } }`. Una orden repetida con el mismo `idSolicitud` no se ejecuta dos veces. Los datos de ejemplo (2 zonas; 1 luz, 1 servo y 1 sensor PIR por zona) están **CONFIRMADOS de forma provisional** hasta conocer el hardware real.
+Los eventos de más de 90 días (`DIAS_RETENCION_EVENTOS`) se borran solos una vez al día. Los errores siempre responden `{ "error": { "codigo", "mensaje" } }`. Una orden repetida con el mismo `idSolicitud` no se ejecuta dos veces. Los datos de ejemplo (2 zonas; 1 luz, 1 servo y 1 sensor PIR por zona) están **CONFIRMADOS de forma provisional** hasta conocer el hardware real.
 
 ## Simulador (`DRIVER=simulado`)
 
@@ -95,4 +98,4 @@ diseno/              Referencia de Figma
 
 La arquitectura completa está en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md). Las reglas de trabajo están en [CLAUDE.md](CLAUDE.md).
 
-**Estado:** Fase 6 completada (frontend conectado a la API; diseño visual provisional).
+**Estado:** Fase 7 completada (tiempo real, historial, estadísticas y manejo de errores).

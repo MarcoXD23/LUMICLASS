@@ -7,12 +7,11 @@ import { InterruptorLuz } from '../componentes/InterruptorLuz';
 import { SelectorModo } from '../componentes/SelectorModo';
 import { TarjetaZona } from '../componentes/TarjetaZona';
 import { useAccion } from '../hooks/useAccion';
-import { useConsulta } from '../hooks/useConsulta';
-import { INTERVALO_ACTUALIZACION_MS } from './Inicio';
+import { useDatosEnVivo } from '../hooks/useDatosEnVivo';
 
 /** Control manual de luces (una por una o por zona) y del modo de cada zona. */
 export function Control() {
-  const consulta = useConsulta(api.estadoSalon, { intervaloMs: INTERVALO_ACTUALIZACION_MS });
+  const consulta = useDatosEnVivo(api.estadoSalon);
   const alTerminar = consulta.recargar;
 
   // Una sola acción a la vez en toda la página: evita órdenes cruzadas por doble clic.

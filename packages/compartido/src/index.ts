@@ -9,3 +9,4 @@ export * from './esquemas/comandos';
 export * from './esquemas/reglas';
 export * from './esquemas/eventos';
 export * from './esquemas/simulador';
+export * from './esquemas/estadisticas';
