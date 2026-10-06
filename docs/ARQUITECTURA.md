@@ -67,16 +67,20 @@ LUMICLASS/
 
 ## 4. Entidades
 
-| Entidad              | Campos clave                                                                                                                         |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| **Salon**            | id, nombre, ocupado (calculado), ultimaActualizacion                                                                                 |
-| **Zona**             | id, salonId, nombre, modo (`automatico` / `manual`)                                                                                  |
-| **Luz**              | id, zonaId, nombre, estadoDeseado (`on`/`off`), estadoReal (`on`/`off`/`desconocido`), actuadorId                                    |
-| **Sensor**           | id, zonaId, tipo, conexion (`activo`/`inactivo`/`falla`), presencia, ultimaLectura, conteoPersonas? (solo si el hardware lo permite) |
-| **Actuador** (servo) | id, conexion, ocupado (ejecutando orden), ultimoResultado                                                                            |
-| **Regla**            | id, nombre, activa, prioridad, condicion (JSON), accion (JSON), horario?                                                             |
-| **Evento**           | id, fecha, tipo, origen (`usuario`/`regla`/`sistema`/`simulador`), entidad, datos, severidad                                         |
-| **Usuario**          | Solo si se confirma que hay login. El diseño deja espacio para agregarlo.                                                            |
+| Entidad               | Campos clave                                                                                                                         |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **Salon**             | id, nombre, ocupado (calculado), ultimaActualizacion                                                                                 |
+| **Zona**              | id, salonId, nombre, modo (`automatico` / `manual`)                                                                                  |
+| **Luz**               | id, zonaId, nombre, estadoDeseado (`on`/`off`), estadoReal (`on`/`off`/`desconocido`), actuadorId                                    |
+| **Sensor**            | id, zonaId, tipo, conexion (`activo`/`inactivo`/`falla`), presencia, ultimaLectura, conteoPersonas? (solo si el hardware lo permite) |
+| **Actuador** (servo)  | id, conexion, ocupado (ejecutando orden), ultimoResultado                                                                            |
+| **Regla**             | id, nombre, activa, prioridad, condicion (JSON), accion (JSON), horario?                                                             |
+| **Evento**            | id, fecha, tipo, origen (`usuario`/`regla`/`sistema`/`simulador`), entidad, datos, severidad                                         |
+| **Usuario**           | id, nombre, correo (único), hashContrasena (scrypt), rol (`admin`/`usuario`), inactivoDesde?, inactivadoPorId?                       |
+| **Sesion**            | id, usuarioId, tokenHash (SHA-256 del token de la cookie), creadaEn, expiraEn (8 h), activa, cerradaEn?                              |
+| **TokenRecuperacion** | id, usuarioId, tokenHash, creadoEn, expiraEn (30 min), estado (`pendiente`/`usado`/`vencido`)                                        |
+| **CorreoSimulado**    | id, para, asunto, cuerpo, enlace, creadoEn (bandeja de prueba mientras no haya SMTP)                                                 |
+| **VersionRegistro**   | id, entidad, entidadId, datos (JSON de la versión anterior), reemplazadoEn, reemplazadoPorId                                         |
 
 - `estadoDeseado` y `estadoReal` van separados: el servo puede fallar y, sin sensor de luz, el estado
   real es `desconocido`. La interfaz lo muestra como advertencia en lugar de un dato falso.
@@ -84,18 +88,18 @@ LUMICLASS/
 
 ## 5. Endpoints (`/api/v1`)
 
-| Método              | Ruta                                                | Uso                                               |
-| ------------------- | --------------------------------------------------- | ------------------------------------------------- |
-| GET                 | `/salud`                                            | Estado de API, driver y base de datos             |
-| GET                 | `/salon/estado`                                     | Todo el dashboard en una sola llamada             |
-| GET                 | `/zonas` · `/luces` · `/sensores` · `/sensores/:id` | Listas y detalle                                  |
-| PATCH               | `/zonas/:id/modo`                                   | `{ modo: "automatico" \| "manual" }`              |
-| POST                | `/luces/:id/comando` · `/zonas/:id/comando`         | `{ accion: "encender" \| "apagar", idSolicitud }` |
-| GET/POST/PUT/DELETE | `/reglas[/:id]`                                     | Gestión de reglas                                 |
-| GET                 | `/eventos?tipo&desde&hasta&pagina`                  | Historial con filtros                             |
-| GET                 | `/estadisticas?desde&hasta`                         | Horas encendidas, ocupación, número de fallas     |
-| GET                 | `/tiempo-real`                                      | Flujo SSE                                         |
-| POST                | `/sim/...`                                          | Solo si `DRIVER=simulado` (sección 6)             |
+| Método       | Ruta                                                | Uso                                               |
+| ------------ | --------------------------------------------------- | ------------------------------------------------- |
+| GET          | `/salud`                                            | Estado de API, driver y base de datos             |
+| GET          | `/salon/estado`                                     | Todo el dashboard en una sola llamada             |
+| GET          | `/zonas` · `/luces` · `/sensores` · `/sensores/:id` | Listas y detalle                                  |
+| PATCH        | `/zonas/:id/modo`                                   | `{ modo: "automatico" \| "manual" }`              |
+| POST         | `/luces/:id/comando` · `/zonas/:id/comando`         | `{ accion: "encender" \| "apagar", idSolicitud }` |
+| GET/POST/PUT | `/reglas[/:id]`                                     | Gestión de reglas (solo admin modifica)           |
+| GET          | `/eventos?tipo&desde&hasta&pagina`                  | Historial con filtros                             |
+| GET          | `/estadisticas?desde&hasta`                         | Horas encendidas, ocupación, número de fallas     |
+| GET          | `/tiempo-real`                                      | Flujo SSE                                         |
+| POST         | `/sim/...`                                          | Solo si `DRIVER=simulado` (sección 6)             |
 
 **Protecciones:**
 
@@ -162,6 +166,31 @@ pruebas) y comprobar que la luz se apaga y aparece el evento.
 | Automático / manual | —        | Insignia con ícono            |
 
 Siempre ícono y texto además del color, para que se entienda a simple vista y sea accesible.
+
+## 9. Autenticación, roles y borrado lógico (Fases 4 y 5)
+
+- **Contraseñas:** `scrypt` de Node (sin dependencias nativas, funciona igual en Windows), con sal aleatoria por usuario.
+- **Sesión:** cookie `httpOnly` + `SameSite=Lax` con un token aleatorio; en la base solo se guarda su hash.
+  Dura 8 h; al vencer o cerrar sesión queda `activa = false` (no se borra). Ctrl+F5 no la pierde.
+- **Rutas protegidas:** toda la API (incluido `/tiempo-real`) exige sesión, salvo `/salud` y `/auth/*`.
+  Sin sesión → `401 NO_AUTENTICADO`; sin permiso → `403 SOLO_ADMIN`.
+- **Fuerza bruta:** 5 intentos fallidos de login por correo e IP en 15 min → `429`.
+- **Recuperación:** `POST /auth/recuperar` siempre responde lo mismo (no revela si el correo existe). Token de un solo
+  uso, 30 min. Correo simulado: consola del servidor + bandeja `/correos` (solo con `CORREO_MODO=simulado`).
+- **Roles:** _admin_ (intocable; único que gestiona reglas y usuarios) y _usuario_ (registro abierto: ve todo,
+  controla luces, cambia el modo y usa el simulador). El primer admin se crea con los datos iniciales desde `.env`.
+- **Borrado lógico:** `inactivoDesde` / `inactivadoPorId` en usuarios, reglas, zonas, luces, sensores y servos.
+  Antes de reemplazar un dato se guarda la versión anterior en `VersionRegistro`. Sin DELETE en la aplicación.
+  Los eventos no se borran; órdenes duplicadas y tokens vencidos se marcan como vencidos.
+
+| Método      | Ruta                                              | Uso                                              |
+| ----------- | ------------------------------------------------- | ------------------------------------------------ |
+| POST        | `/auth/registro` · `/auth/login` · `/auth/logout` | Cuenta y sesión                                  |
+| GET         | `/auth/sesion`                                    | Usuario actual (o 401)                           |
+| POST        | `/auth/recuperar` · `/auth/restablecer`           | Recuperación de contraseña                       |
+| GET         | `/auth/correos-simulados`                         | Bandeja de prueba (solo modo simulado)           |
+| GET / PATCH | `/usuarios` · `/usuarios/:id`                     | Admin: listar, desactivar/reactivar, cambiar rol |
+| POST        | `/reglas/:id/desactivar`                          | Admin: "eliminar" una regla (borrado lógico)     |
 
 ## Pendiente
 
