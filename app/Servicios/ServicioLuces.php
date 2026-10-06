@@ -2,35 +2,37 @@
 
 namespace App\Servicios;
 
+use App\Drivers\DriverHardware;
+use App\Drivers\RespuestaActuador;
 use App\Enums\AccionLuz;
 use App\Enums\EstadoConexion;
 use App\Enums\EstadoLuz;
+use App\Enums\EstadoOrden;
 use App\Enums\ModoZona;
 use App\Enums\OrigenEvento;
 use App\Enums\SeveridadEvento;
 use App\Enums\TipoEvento;
 use App\Exceptions\ComandoRechazado;
+use App\Models\Actuador;
 use App\Models\Luz;
+use App\Models\Regla;
 use App\Models\Zona;
 use Illuminate\Support\Facades\DB;
 
-/**
- * Reglas de negocio de las órdenes a las luces.
- * En la Fase 4 solo se guarda el estado deseado; el driver (Fase 5) moverá el servo
- * y actualizará el estado real.
- */
+/** Reglas de negocio de las órdenes a las luces y de la respuesta de los servos. */
 class ServicioLuces
 {
     public function __construct(
         private readonly RegistroEventos $eventos,
         private readonly ServicioZonas $zonas,
+        private readonly DriverHardware $driver,
     ) {}
 
     /** @throws ComandoRechazado */
-    public function comandarLuz(Luz $luz, AccionLuz $accion, OrigenEvento $origen): ResultadoComando
+    public function comandarLuz(Luz $luz, AccionLuz $accion, OrigenEvento $origen, ?Regla $regla = null): ResultadoComando
     {
         try {
-            return DB::transaction(fn () => $this->aplicar($luz, $accion, $origen));
+            return DB::transaction(fn () => $this->aplicar($luz, $accion, $origen, $regla));
         } catch (ComandoRechazado $rechazo) {
             // Fuera de la transacción para que el rechazo sí quede en el historial.
             $this->eventos->registrar(
@@ -58,11 +60,7 @@ class ServicioLuces
         foreach ($zona->luces()->orderBy('id')->get() as $luz) {
             try {
                 $resultado = $this->comandarLuz($luz, $accion, $origen);
-                $resultados[] = [
-                    'luz_id' => $luz->id,
-                    'resultado' => $resultado->cambio ? 'cambiada' : 'sin_cambio',
-                    'mensaje' => $resultado->mensaje,
-                ];
+                $resultados[] = ['luz_id' => $luz->id, 'resultado' => $resultado->resultado(), 'mensaje' => $resultado->mensaje];
             } catch (ComandoRechazado $rechazo) {
                 $resultados[] = [
                     'luz_id' => $luz->id,
@@ -76,7 +74,62 @@ class ServicioLuces
         return $resultados;
     }
 
-    private function aplicar(Luz $luz, AccionLuz $accion, OrigenEvento $origen): ResultadoComando
+    /**
+     * Para el motor de reglas: true solo si la orden haría algo y el servo puede recibirla.
+     * Tampoco reintenta una orden que ya falló (estado real desconocido): así una regla
+     * no llena el historial de errores repetidos. El usuario sí puede reintentarla.
+     */
+    public function requiereAccion(Luz $luz, AccionLuz $accion): bool
+    {
+        $actuador = $luz->actuador;
+        $objetivo = $accion->estadoObjetivo();
+
+        return $actuador !== null
+            && $actuador->conexion === EstadoConexion::Activo
+            && ! $actuador->ocupado
+            && ! $this->yaEstaEn($luz, $objetivo)
+            && ! ($luz->estado_real === EstadoLuz::Desconocida && $luz->estado_deseado === $objetivo);
+    }
+
+    /** Revisa una orden pendiente: la confirma, la marca fallida o la vence por tiempo de espera. */
+    public function revisarPendiente(Actuador $actuador): void
+    {
+        DB::transaction(function () use ($actuador) {
+            $actuador = Actuador::query()->with('luz')->lockForUpdate()->find($actuador->getKey());
+            $accion = $actuador?->orden_pendiente;
+
+            if ($accion === null) {
+                return;
+            }
+
+            $luz = $actuador->luz;
+            if ($luz === null) {
+                $this->liberar($actuador, 'La orden se canceló porque el servo ya no tiene luz asignada.');
+
+                return;
+            }
+
+            $respuesta = $this->driver->consultarPendiente($actuador);
+            $espera = config('lumiclass.servo.segundos_espera_confirmacion');
+
+            if ($respuesta->estado === EstadoOrden::Pendiente && $actuador->orden_iniciada_en->diffInSeconds(now()) >= $espera) {
+                $mensaje = "El servo \"{$actuador->nombre}\" no confirmó la orden en {$espera} s; el estado de la luz \"{$luz->nombre}\" es desconocido.";
+                $luz->estado_real = EstadoLuz::Desconocida;
+                $luz->save();
+                $this->liberar($actuador, $mensaje);
+                $this->eventos->registrar(TipoEvento::ActuadorSinRespuesta, OrigenEvento::Sistema, $mensaje, $actuador, ['luz_id' => $luz->id, 'accion' => $accion->value], SeveridadEvento::Error);
+
+                return;
+            }
+
+            if ($respuesta->estado !== EstadoOrden::Pendiente) {
+                $luz->setRelation('actuador', $actuador);
+                $this->aplicarRespuesta($luz, $accion, $respuesta, OrigenEvento::Sistema, true);
+            }
+        });
+    }
+
+    private function aplicar(Luz $luz, AccionLuz $accion, OrigenEvento $origen, ?Regla $regla): ResultadoComando
     {
         $luz = Luz::query()->with(['actuador', 'zona'])->lockForUpdate()->findOrFail($luz->getKey());
         $objetivo = $accion->estadoObjetivo();
@@ -84,7 +137,7 @@ class ServicioLuces
         $this->validarActuador($luz);
 
         if ($this->yaEstaEn($luz, $objetivo)) {
-            return new ResultadoComando($luz, false, "La luz \"{$luz->nombre}\" ya está {$objetivo->value}; no se movió el servo.");
+            return new ResultadoComando($luz, null, "La luz \"{$luz->nombre}\" ya está {$objetivo->value}; no se movió el servo.");
         }
 
         // Una orden manual sobre una zona automática la pasa a manual (si no, una regla la revertiría).
@@ -92,27 +145,73 @@ class ServicioLuces
             $this->zonas->cambiarModo($luz->zona, ModoZona::Manual, $origen, 'Motivo: orden manual sobre una luz.');
         }
 
-        $anterior = $luz->estado_deseado;
         $luz->estado_deseado = $objetivo;
         $luz->save();
+
+        $respuesta = $this->driver->accionar($luz->actuador, $accion);
 
         $this->eventos->registrar(
             TipoEvento::LuzComando,
             $origen,
-            "Orden \"{$accion->value}\" para la luz \"{$luz->nombre}\".",
+            $regla
+                ? "Regla \"{$regla->nombre}\": orden \"{$accion->value}\" para la luz \"{$luz->nombre}\"."
+                : "Orden \"{$accion->value}\" para la luz \"{$luz->nombre}\".",
             $luz,
-            [
+            array_filter([
                 'accion' => $accion->value,
-                'estado_deseado_anterior' => $anterior->value,
-                'estado_deseado' => $objetivo->value,
-            ],
+                'resultado' => $respuesta->estado->value,
+                'regla_id' => $regla?->id,
+            ], fn ($valor) => $valor !== null),
         );
 
-        return new ResultadoComando(
-            $luz->fresh(['actuador', 'zona']),
-            true,
-            "Orden \"{$accion->value}\" registrada para la luz \"{$luz->nombre}\".",
-        );
+        $this->aplicarRespuesta($luz, $accion, $respuesta, $origen, false);
+
+        return new ResultadoComando($luz->fresh(['actuador', 'zona']), $respuesta->estado, $respuesta->mensaje);
+    }
+
+    private function aplicarRespuesta(Luz $luz, AccionLuz $accion, RespuestaActuador $respuesta, OrigenEvento $origen, bool $eraPendiente): void
+    {
+        $actuador = $luz->actuador;
+
+        switch ($respuesta->estado) {
+            case EstadoOrden::Completada:
+                $luz->estado_real = $accion->estadoObjetivo();
+                $luz->save();
+                $this->liberar($actuador, 'ok');
+
+                if ($eraPendiente) {
+                    $this->eventos->registrar(TipoEvento::LuzConfirmada, $origen, "La luz \"{$luz->nombre}\" quedó {$luz->estado_real->value}.", $luz, ['accion' => $accion->value]);
+                }
+                break;
+
+            case EstadoOrden::Pendiente:
+                $actuador->fill(['ocupado' => true, 'orden_pendiente' => $accion, 'orden_iniciada_en' => now()])->save();
+                break;
+
+            case EstadoOrden::Fallida:
+                $luz->estado_real = EstadoLuz::Desconocida;
+                $luz->save();
+                $this->liberar($actuador, $respuesta->mensaje);
+                $this->eventos->registrar(
+                    TipoEvento::ActuadorFalla,
+                    $origen,
+                    "Servo \"{$actuador->nombre}\": {$respuesta->mensaje}",
+                    $actuador,
+                    ['luz_id' => $luz->id, 'accion' => $accion->value],
+                    SeveridadEvento::Error,
+                );
+                break;
+        }
+    }
+
+    private function liberar(Actuador $actuador, string $resultado): void
+    {
+        $actuador->fill([
+            'ocupado' => false,
+            'orden_pendiente' => null,
+            'orden_iniciada_en' => null,
+            'ultimo_resultado' => $resultado,
+        ])->save();
     }
 
     /** @throws ComandoRechazado */
@@ -139,10 +238,9 @@ class ServicioLuces
         }
     }
 
-    /** Si el estado real es desconocido, se compara con el último estado deseado. */
+    /** Si el estado real es desconocido, la orden sí se envía: es la forma de recuperar la luz. */
     private function yaEstaEn(Luz $luz, EstadoLuz $objetivo): bool
     {
-        return $luz->estado_real === $objetivo
-            || ($luz->estado_real === EstadoLuz::Desconocida && $luz->estado_deseado === $objetivo);
+        return $luz->estado_real === $objetivo;
     }
 }

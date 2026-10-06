@@ -64,6 +64,14 @@ class EstadoSalon
                 ];
             } elseif ($actuador->conexion !== EstadoConexion::Activo) {
                 $alertas[] = $this->alertaConexion($actuador->conexion, "Servo \"{$actuador->nombre}\" {$actuador->conexion->value}.", 'actuador', $actuador->id);
+            } elseif ($luz->estado_real === EstadoLuz::Desconocida && $actuador->ultimo_resultado !== null && $actuador->ultimo_resultado !== 'ok') {
+                // La última orden falló o no tuvo respuesta: no sabemos si la luz está encendida.
+                $alertas[] = [
+                    'nivel' => 'error',
+                    'mensaje' => "Luz \"{$luz->nombre}\" en estado desconocido. {$actuador->ultimo_resultado}",
+                    'entidad_tipo' => 'luz',
+                    'entidad_id' => $luz->id,
+                ];
             }
         }
 

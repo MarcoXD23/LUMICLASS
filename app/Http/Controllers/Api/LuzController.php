@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\EstadoOrden;
 use App\Enums\OrigenEvento;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ComandoLuzRequest;
@@ -29,11 +30,13 @@ class LuzController extends Controller
         return $solicitudes->ejecutarUnaVez($request, $request->idSolicitud(), function () use ($request, $luz, $luces) {
             $resultado = $luces->comandarLuz($luz, $request->accion(), OrigenEvento::Usuario);
 
+            // 202 = el servo aún no confirma; el estado real se actualizará en un próximo tick.
             return response()->json([
                 'data' => LuzResource::make($resultado->luz)->resolve(),
-                'cambio' => $resultado->cambio,
+                'cambio' => $resultado->cambio(),
+                'resultado' => $resultado->resultado(),
                 'mensaje' => $resultado->mensaje,
-            ]);
+            ], $resultado->orden === EstadoOrden::Pendiente ? 202 : 200);
         });
     }
 }

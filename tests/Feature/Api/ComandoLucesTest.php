@@ -31,9 +31,10 @@ class ComandoLucesTest extends TestCase
         $this->ordenar($luz, 'encender')
             ->assertOk()
             ->assertJsonPath('cambio', true)
+            ->assertJsonPath('resultado', 'completada')
             ->assertJsonPath('data.estado_deseado', 'encendida')
-            // Sin driver (Fase 5) el estado real sigue desconocido.
-            ->assertJsonPath('data.estado_real', 'desconocida');
+            // El servo simulado responde "ok" por defecto: el estado real queda confirmado.
+            ->assertJsonPath('data.estado_real', 'encendida');
 
         $this->assertSame(EstadoLuz::Encendida, $luz->fresh()->estado_deseado);
         $this->assertDatabaseHas('eventos', ['tipo' => 'luz.comando', 'entidad_tipo' => 'luz', 'entidad_id' => $luz->id]);
@@ -41,9 +42,9 @@ class ComandoLucesTest extends TestCase
 
     public function test_orden_innecesaria_no_cambia_nada(): void
     {
-        $luz = Luz::factory()->create(['estado_deseado' => EstadoLuz::Apagada]);
+        $luz = Luz::factory()->create(['estado_deseado' => EstadoLuz::Apagada, 'estado_real' => EstadoLuz::Apagada]);
 
-        $this->ordenar($luz, 'apagar')->assertOk()->assertJsonPath('cambio', false);
+        $this->ordenar($luz, 'apagar')->assertOk()->assertJsonPath('cambio', false)->assertJsonPath('resultado', 'sin_cambio');
 
         $this->assertSame(0, Evento::where('tipo', 'luz.comando')->count());
     }
@@ -54,7 +55,15 @@ class ComandoLucesTest extends TestCase
         $luz = Luz::factory()->create(['estado_deseado' => EstadoLuz::Apagada, 'estado_real' => EstadoLuz::Encendida]);
 
         $this->ordenar($luz, 'apagar')->assertOk()->assertJsonPath('cambio', true);
-        $this->ordenar($luz, 'encender')->assertOk()->assertJsonPath('cambio', false);
+        $this->ordenar($luz, 'apagar')->assertOk()->assertJsonPath('cambio', false);
+    }
+
+    public function test_con_estado_real_desconocido_el_usuario_puede_reintentar(): void
+    {
+        $luz = Luz::factory()->create(['estado_deseado' => EstadoLuz::Encendida, 'estado_real' => EstadoLuz::Desconocida]);
+
+        $this->ordenar($luz, 'encender')->assertOk()->assertJsonPath('resultado', 'completada');
+        $this->assertSame(EstadoLuz::Encendida, $luz->fresh()->estado_real);
     }
 
     public function test_solicitud_duplicada_devuelve_la_misma_respuesta_sin_ejecutar_otra_vez(): void
@@ -151,10 +160,10 @@ class ComandoLucesTest extends TestCase
         ])->assertOk();
 
         $porLuz = collect($respuesta->json('resultados'))->keyBy('luz_id');
-        $this->assertSame('cambiada', $porLuz[$buena->id]['resultado']);
+        $this->assertSame('completada', $porLuz[$buena->id]['resultado']);
         $this->assertSame('rechazada', $porLuz[$mala->id]['resultado']);
         $this->assertSame('actuador_no_disponible', $porLuz[$mala->id]['codigo']);
-        $this->assertSame('cambiada', $porLuz[$yaApagada->id]['resultado']);
+        $this->assertSame('completada', $porLuz[$yaApagada->id]['resultado']);
         $respuesta->assertJsonCount(3, 'data.luces');
     }
 }

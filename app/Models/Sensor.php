@@ -13,7 +13,7 @@ class Sensor extends Model
 
     protected $table = 'sensores';
 
-    protected $fillable = ['zona_id', 'nombre', 'tipo', 'conexion', 'presencia', 'conteo_personas', 'ultima_lectura'];
+    protected $fillable = ['zona_id', 'nombre', 'tipo', 'conexion', 'presencia', 'presencia_desde', 'conteo_personas', 'ultima_lectura'];
 
     protected $attributes = ['conexion' => 'activo'];
 
@@ -22,6 +22,7 @@ class Sensor extends Model
         return [
             'conexion' => EstadoConexion::class,
             'presencia' => 'boolean',
+            'presencia_desde' => 'datetime',
             'conteo_personas' => 'integer',
             'ultima_lectura' => 'datetime',
         ];

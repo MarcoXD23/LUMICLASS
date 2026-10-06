@@ -46,6 +46,36 @@ Se usa el puerto **8001** y la cookie de sesión **`lumiclass_session`** para qu
 | `vendor\bin\pint`               | Formatea el código PHP (`--test` solo revisa)       |
 | `php artisan migrate`           | Aplica las migraciones de la base de datos          |
 | `php artisan migrate:fresh --seed` | Recrea la base local desde cero con datos de ejemplo |
+| `php artisan lumiclass:tick`    | Revisa órdenes pendientes de los servos y reglas con tiempo |
+| `php artisan schedule:work`     | (Opcional, otra consola) ejecuta el tick cada 2 s   |
+
+## Probar el simulador (PowerShell)
+
+Con el servidor encendido (`php artisan serve --port=8001`), en otra consola:
+
+```powershell
+$api = "http://localhost:8001/api/v1"
+$json = @{ "Content-Type" = "application/json"; "Accept" = "application/json" }
+
+# 1. Escenario limpio: todo activo y luces apagadas
+Invoke-RestMethod -Method Post "$api/sim/reiniciar" -Headers $json
+
+# 2. Alguien entra al salón: la regla enciende las luces
+Invoke-RestMethod -Method Post "$api/sim/presencia" -Headers $json -Body '{"presencia": true}'
+(Invoke-RestMethod "$api/salon/estado").data.luces
+
+# 3. El salón queda vacío: se apagan tras la espera de la regla (300 s)
+Invoke-RestMethod -Method Post "$api/sim/presencia" -Headers $json -Body '{"presencia": false}'
+
+# 4. Simular fallas: servo que no responde y sensor dañado
+Invoke-RestMethod -Method Patch "$api/sim/actuadores/1" -Headers $json -Body '{"respuesta": "sin_respuesta"}'
+Invoke-RestMethod -Method Patch "$api/sim/sensores/1" -Headers $json -Body '{"conexion": "falla"}'
+
+# 5. Ver el historial
+(Invoke-RestMethod "$api/eventos").data | Format-Table fecha, tipo, origen, mensaje
+```
+
+Para la demo conviene acortar las esperas en `.env`: `LUMICLASS_FACTOR_TIEMPO_REGLAS=0.1` hace que los 300 s pasen a 30 s. El sistema avanza solo mientras se consulte `/salon/estado` (o con `php artisan schedule:work`).
 
 ## Estructura
 
@@ -66,4 +96,4 @@ Las reglas de trabajo están en [CLAUDE.md](CLAUDE.md).
 
 LUMICLASS está construido con [Laravel](https://laravel.com), un framework web de PHP. Documentación oficial: https://laravel.com/docs. Laravel es software de código abierto con licencia [MIT](https://opensource.org/licenses/MIT).
 
-**Estado:** Fase 4 completada (backend, API y base de datos en Laravel, con pruebas). El proyecto anterior en Node.js quedó guardado en el commit `d4e4b20` de la rama `feature/fase-4-backend-api`.
+**Estado:** Fase 5 completada (simulador de sensores y servos, motor de reglas, con pruebas). El proyecto anterior en Node.js quedó guardado en el commit `d4e4b20` de la rama `feature/fase-4-backend-api`.

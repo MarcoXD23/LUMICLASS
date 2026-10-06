@@ -7,13 +7,17 @@ use App\Http\Resources\ZonaResource;
 use App\Http\RespuestaError;
 use App\Models\Salon;
 use App\Servicios\EstadoSalon;
+use App\Servicios\ServicioTick;
 use Illuminate\Http\JsonResponse;
 
 class SalonController extends Controller
 {
     /** Todo el dashboard en una sola llamada. */
-    public function estado(EstadoSalon $estadoSalon): JsonResponse
+    public function estado(EstadoSalon $estadoSalon, ServicioTick $tick): JsonResponse
     {
+        // Así la demo avanza (órdenes lentas, reglas con duración) con solo tener el dashboard abierto.
+        $tick->ejecutarSiCorresponde();
+
         $salon = Salon::query()
             ->with(['zonas' => fn ($q) => $q->orderBy('id'), 'zonas.luces.actuador', 'zonas.sensores'])
             ->orderBy('id')

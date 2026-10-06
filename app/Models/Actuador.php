@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\AccionLuz;
 use App\Enums\EstadoConexion;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,7 +15,7 @@ class Actuador extends Model
 
     protected $table = 'actuadores';
 
-    protected $fillable = ['nombre', 'conexion', 'ocupado', 'ultimo_resultado'];
+    protected $fillable = ['nombre', 'conexion', 'ocupado', 'orden_pendiente', 'orden_iniciada_en', 'ultimo_resultado'];
 
     protected $attributes = ['conexion' => 'activo', 'ocupado' => false];
 
@@ -23,6 +24,8 @@ class Actuador extends Model
         return [
             'conexion' => EstadoConexion::class,
             'ocupado' => 'boolean',
+            'orden_pendiente' => AccionLuz::class,
+            'orden_iniciada_en' => 'datetime',
         ];
     }
 

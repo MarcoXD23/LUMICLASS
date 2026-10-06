@@ -31,13 +31,15 @@ class SalonDemoSeeder extends Seeder
         DB::transaction(function () {
             $salon = Salon::create(['nombre' => 'Salón 101']);
             $servo = 1;
+            // En la simulación se sabe que las luces empiezan apagadas; con hardware real no.
+            $estadoReal = config('lumiclass.driver') === 'simulado' ? 'apagada' : 'desconocida';
 
             foreach (self::ZONAS as $indice => $datosZona) {
                 $zona = $salon->zonas()->create(['nombre' => $datosZona['nombre'], 'modo' => 'automatico']);
 
                 foreach ($datosZona['luces'] as $nombreLuz) {
                     $actuador = Actuador::create(['nombre' => 'Servo '.$servo++]);
-                    $zona->luces()->create(['nombre' => $nombreLuz, 'actuador_id' => $actuador->id]);
+                    $zona->luces()->create(['nombre' => $nombreLuz, 'actuador_id' => $actuador->id, 'estado_real' => $estadoReal]);
                 }
 
                 $zona->sensores()->create(['nombre' => 'Sensor PIR '.($indice + 1), 'tipo' => 'pir']);
