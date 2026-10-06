@@ -56,8 +56,11 @@ export class ServicioEstadisticas {
     const inicio = desde > hasta ? hasta : desde;
 
     const [luces, zonas, cambios, enRango] = await Promise.all([
-      this.bd.luz.findMany({ orderBy: [{ zona: { orden: 'asc' } }, { nombre: 'asc' }] }),
-      this.bd.zona.findMany({ orderBy: { orden: 'asc' } }),
+      this.bd.luz.findMany({
+        where: { inactivoDesde: null },
+        orderBy: [{ zona: { orden: 'asc' } }, { nombre: 'asc' }],
+      }),
+      this.bd.zona.findMany({ where: { inactivoDesde: null }, orderBy: { orden: 'asc' } }),
       // Cambios de luz y presencia hasta el final del rango (los anteriores dan el estado inicial).
       this.bd.evento.findMany({
         where: {

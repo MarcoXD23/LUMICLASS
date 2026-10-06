@@ -63,7 +63,10 @@ export class MotorReglas {
   }
 
   async evaluarTodas(): Promise<void> {
-    const zonas = await this.bd.zona.findMany({ select: { id: true } });
+    const zonas = await this.bd.zona.findMany({
+      where: { inactivoDesde: null },
+      select: { id: true },
+    });
     await Promise.all(zonas.map((zona) => this.evaluarZona(zona.id)));
   }
 
@@ -89,9 +92,12 @@ export class MotorReglas {
   private async evaluarAhora(zonaId: string): Promise<void> {
     const zona = await this.bd.zona.findUnique({
       where: { id: zonaId },
-      include: { sensores: true, luces: { select: { id: true } } },
+      include: {
+        sensores: { where: { inactivoDesde: null } },
+        luces: { where: { inactivoDesde: null }, select: { id: true } },
+      },
     });
-    if (!zona) {
+    if (!zona || zona.inactivoDesde) {
       this.cancelarEspera(zonaId);
       this.estados.delete(zonaId);
       return;

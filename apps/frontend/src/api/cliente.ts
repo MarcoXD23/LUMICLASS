@@ -29,7 +29,7 @@ function esRespuestaError(valor: unknown): valor is RespuestaError {
 }
 
 interface OpcionesPedido {
-  metodo?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  metodo?: 'GET' | 'POST' | 'PUT' | 'PATCH';
   cuerpo?: unknown;
   senal?: AbortSignal;
 }

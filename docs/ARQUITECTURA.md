@@ -182,6 +182,7 @@ Siempre ícono y texto además del color, para que se entienda a simple vista y 
 - **Borrado lógico:** `inactivoDesde` / `inactivadoPorId` en usuarios, reglas, zonas, luces, sensores y servos.
   Antes de reemplazar un dato se guarda la versión anterior en `VersionRegistro`. Sin DELETE en la aplicación.
   Los eventos no se borran; órdenes duplicadas y tokens vencidos se marcan como vencidos.
+  `GET /reglas?incluirEliminadas=true` muestra también las eliminadas; `GET /reglas/:id/versiones` (admin) las versiones anteriores.
 
 | Método      | Ruta                                              | Uso                                              |
 | ----------- | ------------------------------------------------- | ------------------------------------------------ |
@@ -190,7 +191,7 @@ Siempre ícono y texto además del color, para que se entienda a simple vista y 
 | POST        | `/auth/recuperar` · `/auth/restablecer`           | Recuperación de contraseña                       |
 | GET         | `/auth/correos-simulados`                         | Bandeja de prueba (solo modo simulado)           |
 | GET / PATCH | `/usuarios` · `/usuarios/:id`                     | Admin: listar, desactivar/reactivar, cambiar rol |
-| POST        | `/reglas/:id/desactivar`                          | Admin: "eliminar" una regla (borrado lógico)     |
+| POST        | `/reglas/:id/eliminar`                            | Admin: eliminar una regla (borrado lógico)       |
 
 ## Pendiente
 

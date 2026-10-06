@@ -1,48 +1,51 @@
 import type { BaseDatos } from '../db/cliente';
 import type { Reloj } from '../dominio/reloj';
-import type { ServicioEventos } from './eventos';
 
 const UN_DIA_MS = 24 * 60 * 60 * 1000;
 
+export interface ResultadoMantenimiento {
+  solicitudes: number;
+  tokens: number;
+  sesiones: number;
+}
+
 /**
- * Limpieza periódica para que la base no crezca sin límite:
- * - eventos más antiguos que `diasRetencion`
- * - registros de órdenes duplicadas (idSolicitud) de más de 24 h
+ * Tareas diarias. Con borrado lógico NADA se borra: solo se marca lo que ya no sirve.
+ * - Órdenes de más de 24 h: vencidas (ya no protegen contra duplicados).
+ * - Enlaces de recuperación sin usar y vencidos: "vencido".
+ * - Sesiones abiertas pero vencidas: inactivas.
+ * Los eventos del historial se guardan para siempre.
  */
 export class ServicioMantenimiento {
   private cancelar: (() => void) | null = null;
 
   constructor(
     private readonly bd: BaseDatos,
-    private readonly eventos: ServicioEventos,
     private readonly reloj: Reloj,
-    private readonly diasRetencion: number,
   ) {}
 
-  async limpiar(): Promise<{ eventos: number; solicitudes: number }> {
-    const ahora = this.reloj.ahora().getTime();
-    const [eventos, solicitudes] = await Promise.all([
-      this.bd.evento.deleteMany({
-        where: { fecha: { lt: new Date(ahora - this.diasRetencion * UN_DIA_MS) } },
+  async ejecutar(): Promise<ResultadoMantenimiento> {
+    const ahora = this.reloj.ahora();
+    const [solicitudes, tokens, sesiones] = await Promise.all([
+      this.bd.solicitudProcesada.updateMany({
+        where: { vencidaEn: null, fecha: { lt: new Date(ahora.getTime() - UN_DIA_MS) } },
+        data: { vencidaEn: ahora },
       }),
-      this.bd.solicitudProcesada.deleteMany({
-        where: { fecha: { lt: new Date(ahora - UN_DIA_MS) } },
+      this.bd.tokenRecuperacion.updateMany({
+        where: { estado: 'pendiente', expiraEn: { lte: ahora } },
+        data: { estado: 'vencido' },
+      }),
+      this.bd.sesion.updateMany({
+        where: { activa: true, expiraEn: { lte: ahora } },
+        data: { activa: false, cerradaEn: ahora },
       }),
     ]);
-    if (eventos.count > 0) {
-      await this.eventos.registrar({
-        tipo: 'sistema',
-        origen: 'sistema',
-        mensaje: `Se borraron ${eventos.count} eventos de más de ${this.diasRetencion} días`,
-        datos: { eventos: eventos.count, solicitudes: solicitudes.count },
-      });
-    }
-    return { eventos: eventos.count, solicitudes: solicitudes.count };
+    return { solicitudes: solicitudes.count, tokens: tokens.count, sesiones: sesiones.count };
   }
 
-  /** Limpia ahora y luego una vez al día. Un error no detiene el servidor. */
+  /** Ejecuta ahora y luego una vez al día. Un error no detiene el servidor. */
   async iniciar(): Promise<void> {
-    await this.limpiar().catch(() => undefined);
+    await this.ejecutar().catch(() => undefined);
     this.programar();
   }
 
@@ -53,7 +56,7 @@ export class ServicioMantenimiento {
 
   private programar(): void {
     this.cancelar = this.reloj.programar(UN_DIA_MS, () => {
-      void this.limpiar()
+      void this.ejecutar()
         .catch(() => undefined)
         .finally(() => {
           if (this.cancelar) this.programar();

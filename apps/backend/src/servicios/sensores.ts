@@ -45,6 +45,7 @@ export class ServicioSensores {
 
   async listar(): Promise<SensorDto[]> {
     const sensores = await this.bd.sensor.findMany({
+      where: { inactivoDesde: null },
       orderBy: [{ zona: { orden: 'asc' } }, { nombre: 'asc' }],
     });
     return sensores.map(aSensorDto);

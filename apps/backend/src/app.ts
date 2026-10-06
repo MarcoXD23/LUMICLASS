@@ -33,6 +33,7 @@ import { ServicioSalon } from './servicios/salon';
 import { ServicioSensores } from './servicios/sensores';
 import { ServicioSimulador } from './servicios/simulador';
 import { ServicioUsuarios } from './servicios/usuarios';
+import { ServicioVersiones } from './servicios/versiones';
 import { ServicioZonas } from './servicios/zonas';
 
 export interface DependenciasApp {
@@ -51,7 +52,8 @@ export function crearServicios({ entorno, bd, driver, reloj = relojReal }: Depen
   const eventos = new ServicioEventos(bd, difusor);
   const luces = new ServicioLuces(bd, driver, eventos, entorno.TIEMPO_MAX_ACTUADOR_MS);
   const zonas = new ServicioZonas(bd, luces, eventos);
-  const reglas = new ServicioReglas(bd, eventos);
+  const versiones = new ServicioVersiones(bd);
+  const reglas = new ServicioReglas(bd, eventos, versiones, reloj);
   const presencia = new ServicioPresencia(bd, eventos);
   const motor = new MotorReglas(bd, luces, reglas, reloj, entorno.INTERVALO_REGLAS_MS);
   presencia.alProcesarZona = (zonaId) => void motor.evaluarZona(zonaId);
@@ -60,6 +62,7 @@ export function crearServicios({ entorno, bd, driver, reloj = relojReal }: Depen
     bd,
     eventos,
     correo,
+    versiones,
     reloj,
     entorno.DURACION_SESION_HORAS * 60 * 60 * 1000,
   );
@@ -72,7 +75,8 @@ export function crearServicios({ entorno, bd, driver, reloj = relojReal }: Depen
     eventos,
     correo,
     auth,
-    usuarios: new ServicioUsuarios(bd, eventos, reloj),
+    versiones,
+    usuarios: new ServicioUsuarios(bd, eventos, versiones, reloj),
     luces,
     zonas,
     reglas,
@@ -82,7 +86,7 @@ export function crearServicios({ entorno, bd, driver, reloj = relojReal }: Depen
     salon: new ServicioSalon(bd, zonas, driver),
     solicitudes: new RegistroSolicitudes(bd),
     estadisticas: new ServicioEstadisticas(bd, reloj),
-    mantenimiento: new ServicioMantenimiento(bd, eventos, reloj, entorno.DIAS_RETENCION_EVENTOS),
+    mantenimiento: new ServicioMantenimiento(bd, reloj),
     simulador:
       driver instanceof DriverSimulado
         ? new ServicioSimulador(bd, driver, presencia, motor, eventos)

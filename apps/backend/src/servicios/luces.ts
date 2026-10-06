@@ -37,6 +37,7 @@ export class ServicioLuces {
 
   async listar(): Promise<LuzDto[]> {
     const luces = await this.bd.luz.findMany({
+      where: { inactivoDesde: null },
       include: incluirActuador,
       orderBy: [{ zona: { orden: 'asc' } }, { nombre: 'asc' }],
     });

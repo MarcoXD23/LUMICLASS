@@ -56,8 +56,8 @@ describe('pedir', () => {
   });
 
   it('acepta 204 sin cuerpo', async () => {
-    instalarApiFalsa({ 'DELETE /reglas/r1': { estado: 204 } });
-    await expect(api.eliminarRegla('r1')).resolves.toBeUndefined();
+    instalarApiFalsa({ 'POST /auth/logout': { estado: 204 } });
+    await expect(api.auth.logout()).resolves.toBeUndefined();
   });
 });
 

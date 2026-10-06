@@ -34,7 +34,8 @@ export class RegistroSolicitudes {
     }
 
     const guardada = await this.bd.solicitudProcesada.findUnique({ where: { idSolicitud } });
-    if (guardada) {
+    // Una orden vencida (más de 24 h) ya no cuenta como duplicada.
+    if (guardada && !guardada.vencidaEn) {
       this.verificarRuta(guardada.ruta, ruta);
       return {
         codigo: guardada.codigoEstado,

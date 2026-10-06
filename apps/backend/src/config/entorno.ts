@@ -21,8 +21,6 @@ const esquemaEntorno = z.object({
   MAX_CONEXIONES_SSE: z.coerce.number().int().min(1).max(1000).default(50),
   /** Cada cuánto se envía un latido por SSE para que la conexión no se corte. */
   LATIDO_SSE_MS: z.coerce.number().int().min(1000).max(120_000).default(15_000),
-  /** Días que se guardan los eventos del historial. */
-  DIAS_RETENCION_EVENTOS: z.coerce.number().int().min(1).max(3650).default(90),
   /** Cuánto dura una sesión iniciada. */
   DURACION_SESION_HORAS: z.coerce.number().min(0.01).max(72).default(8),
   /** true solo con HTTPS: la cookie de sesión no viaja por HTTP. */

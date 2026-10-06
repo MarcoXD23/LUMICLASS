@@ -44,7 +44,8 @@ export const api = {
   zonas: (senal?: AbortSignal) => pedir<ZonaDto[]>('/zonas', { senal }),
   luces: (senal?: AbortSignal) => pedir<LuzDto[]>('/luces', { senal }),
   sensores: (senal?: AbortSignal) => pedir<SensorDto[]>('/sensores', { senal }),
-  reglas: (senal?: AbortSignal) => pedir<ReglaDto[]>('/reglas', { senal }),
+  reglas: (senal?: AbortSignal, incluirEliminadas = false) =>
+    pedir<ReglaDto[]>(incluirEliminadas ? '/reglas?incluirEliminadas=true' : '/reglas', { senal }),
   eventos: (filtro: Partial<FiltroEventos>, senal?: AbortSignal) =>
     pedir<PaginaEventos>(`/eventos${consulta(filtro)}`, { senal }),
   estadisticas: (filtro: Partial<FiltroEstadisticas>, senal?: AbortSignal) =>
@@ -70,8 +71,9 @@ export const api = {
     pedir<ReglaDto>('/reglas', { metodo: 'POST', cuerpo: regla }),
   actualizarRegla: (id: string, regla: ReglaEntrada) =>
     pedir<ReglaDto>(`/reglas/${encodeURIComponent(id)}`, { metodo: 'PUT', cuerpo: regla }),
+  /** Borrado lógico: la regla queda guardada como eliminada. */
   eliminarRegla: (id: string) =>
-    pedir<void>(`/reglas/${encodeURIComponent(id)}`, { metodo: 'DELETE' }),
+    pedir<ReglaDto>(`/reglas/${encodeURIComponent(id)}/eliminar`, { metodo: 'POST' }),
 
   simulador: {
     estado: (senal?: AbortSignal) => pedir<EstadoSimuladorDto>('/sim/estado', { senal }),

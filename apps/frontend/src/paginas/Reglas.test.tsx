@@ -111,7 +111,7 @@ describe('Reglas', () => {
   it('pide confirmación antes de eliminar', async () => {
     const { llamadas } = instalarApiFalsa({
       ...apiBase(),
-      'DELETE /reglas/regla-apagar-vacio': { estado: 204 },
+      'POST /reglas/regla-apagar-vacio/eliminar': (_c) => ({ cuerpo: reglasEjemplo[1] }),
     });
     const confirmar = vi
       .spyOn(window, 'confirm')
@@ -122,9 +122,9 @@ describe('Reglas', () => {
       name: 'Eliminar Apagar cuando el salón queda vacío',
     });
     fireEvent.click(boton);
-    expect(llamadas.some((l) => l.metodo === 'DELETE')).toBe(false);
+    expect(llamadas.some((l) => l.ruta.endsWith('/eliminar'))).toBe(false);
     fireEvent.click(boton);
-    await waitFor(() => expect(llamadas.some((l) => l.metodo === 'DELETE')).toBe(true));
+    await waitFor(() => expect(llamadas.some((l) => l.ruta.endsWith('/eliminar'))).toBe(true));
     expect(confirmar).toHaveBeenCalledTimes(2);
   });
 
@@ -137,5 +137,25 @@ describe('Reglas', () => {
     expect(screen.getByText('Encender al detectar presencia')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Nueva regla/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Eliminar / })).not.toBeInTheDocument();
+  });
+  it('muestra las reglas eliminadas marcadas y sin botones', async () => {
+    const { llamadas } = instalarApiFalsa({
+      ...apiBase(),
+      'GET /reglas': {
+        cuerpo: [
+          {
+            ...reglasEjemplo[0]!,
+            id: 'vieja',
+            nombre: 'Regla vieja',
+            eliminadaEn: new Date().toISOString(),
+          },
+        ],
+      },
+    });
+    renderizar();
+    fireEvent.click(await screen.findByLabelText(/Mostrar también las reglas eliminadas/));
+    await waitFor(() => expect(llamadas.at(-1)?.parametros.get('incluirEliminadas')).toBe('true'));
+    expect(await screen.findByText(/^Eliminada/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Editar Regla vieja' })).not.toBeInTheDocument();
   });
 });

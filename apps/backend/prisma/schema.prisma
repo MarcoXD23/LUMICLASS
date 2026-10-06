@@ -31,20 +31,27 @@ model Zona {
   reglas        Regla[]
   actualizadoEn DateTime @updatedAt
 
+  /// Borrado lógico: si tiene fecha, el registro está inactivo (no se borra).
+  inactivoDesde   DateTime?
+  inactivadoPorId String?
+
   @@index([salonId])
 }
 
 /// Servomotor que acciona el interruptor de forma mecánica.
 model Actuador {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   nombre          String
   /// "activo" | "inactivo" | "falla"
-  conexion        String   @default("activo")
+  conexion        String    @default("activo")
   /// true mientras ejecuta una orden (evita dos órdenes a la vez).
-  ocupado         Boolean  @default(false)
+  ocupado         Boolean   @default(false)
   ultimoResultado String?
   luz             Luz?
-  actualizadoEn   DateTime @updatedAt
+  actualizadoEn   DateTime  @updatedAt
+  /// Borrado lógico: si tiene fecha, el registro está inactivo (no se borra).
+  inactivoDesde   DateTime?
+  inactivadoPorId String?
 }
 
 model Luz {
@@ -59,6 +66,10 @@ model Luz {
   actuadorId    String   @unique
   actuador      Actuador @relation(fields: [actuadorId], references: [id])
   actualizadoEn DateTime @updatedAt
+
+  /// Borrado lógico: si tiene fecha, el registro está inactivo (no se borra).
+  inactivoDesde   DateTime?
+  inactivadoPorId String?
 
   @@index([zonaId])
 }
@@ -78,23 +89,31 @@ model Sensor {
   ultimaLectura  DateTime?
   actualizadoEn  DateTime  @updatedAt
 
+  /// Borrado lógico: si tiene fecha, el registro está inactivo (no se borra).
+  inactivoDesde   DateTime?
+  inactivadoPorId String?
+
   @@index([zonaId])
 }
 
 model Regla {
-  id            String   @id @default(cuid())
-  nombre        String   @unique
-  activa        Boolean  @default(true)
-  prioridad     Int      @default(100)
+  id              String    @id @default(cuid())
+  /// Único entre las reglas activas (se valida en el código).
+  nombre          String
+  activa          Boolean   @default(true)
+  prioridad       Int       @default(100)
   /// null = aplica a todas las zonas.
-  zonaId        String?
-  zona          Zona?    @relation(fields: [zonaId], references: [id], onDelete: Cascade)
+  zonaId          String?
+  zona            Zona?     @relation(fields: [zonaId], references: [id], onDelete: Cascade)
   /// JSON validado con esquemaCondicion.
-  condicion     String
+  condicion       String
   /// JSON validado con esquemaAccionRegla.
-  accion        String
-  creadoEn      DateTime @default(now())
-  actualizadoEn DateTime @updatedAt
+  accion          String
+  creadoEn        DateTime  @default(now())
+  actualizadoEn   DateTime  @updatedAt
+  /// Borrado lógico: si tiene fecha, el registro está inactivo (no se borra).
+  inactivoDesde   DateTime?
+  inactivadoPorId String?
 }
 
 /// Única fuente del historial, las alertas y las estadísticas.
@@ -116,11 +135,13 @@ model Evento {
 
 /// Órdenes ya ejecutadas, para no repetirlas si llegan duplicadas.
 model SolicitudProcesada {
-  idSolicitud  String   @id
+  idSolicitud  String    @id
   ruta         String
   codigoEstado Int
   respuesta    String
-  fecha        DateTime @default(now())
+  fecha        DateTime  @default(now())
+  /// Pasadas 24 h se marca vencida (ya no protege contra duplicados) en lugar de borrarse.
+  vencidaEn    DateTime?
 }
 
 /// Cuenta de acceso. Nunca se borra: al desactivarla se marca inactivoDesde.
@@ -180,4 +201,18 @@ model CorreoSimulado {
   cuerpo   String
   enlace   String?
   creadoEn DateTime @default(now())
+}
+
+/// Versión anterior de un dato que se reemplazó (borrado lógico: nada se sobrescribe sin copia).
+model VersionRegistro {
+  id               Int      @id @default(autoincrement())
+  /// "regla" | "usuario" | ...
+  entidad          String
+  entidadId        String
+  /// JSON con los datos tal como estaban antes del cambio.
+  datos            String
+  reemplazadoEn    DateTime @default(now())
+  reemplazadoPorId String?
+
+  @@index([entidad, entidadId])
 }

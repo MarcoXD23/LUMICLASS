@@ -92,6 +92,7 @@ export const reglasEjemplo: ReglaDto[] = [
     accion: { tipo: 'encender' },
     creadoEn: FECHA,
     actualizadoEn: FECHA,
+    eliminadaEn: null,
   },
   {
     id: 'regla-apagar-vacio',
@@ -103,6 +104,7 @@ export const reglasEjemplo: ReglaDto[] = [
     accion: { tipo: 'apagar' },
     creadoEn: FECHA,
     actualizadoEn: FECHA,
+    eliminadaEn: null,
   },
 ];
 

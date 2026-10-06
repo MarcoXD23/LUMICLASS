@@ -8,6 +8,7 @@ import type { ServicioCorreo } from './correo';
 import type { ServicioEventos } from './eventos';
 import { LimitadorIntentos } from './limitadorIntentos';
 import { aUsuarioDto, normalizarRol, type UsuarioSesion } from './usuarios';
+import type { ServicioVersiones } from './versiones';
 
 const MINUTO_MS = 60 * 1000;
 const VIGENCIA_RECUPERACION_MS = 30 * MINUTO_MS;
@@ -30,6 +31,7 @@ export class ServicioAutenticacion {
     private readonly bd: BaseDatos,
     private readonly eventos: ServicioEventos,
     private readonly correo: ServicioCorreo,
+    private readonly versiones: ServicioVersiones,
     private readonly reloj: Reloj,
     private readonly duracionSesionMs: number,
   ) {
@@ -206,6 +208,13 @@ export class ServicioAutenticacion {
       );
     }
 
+    // Copia de la versión anterior (sin el hash: no sirve guardar contraseñas viejas).
+    await this.versiones.guardar(
+      'usuario',
+      registro.usuarioId,
+      { cambio: 'contrasena', actualizadoEn: registro.usuario.actualizadoEn.toISOString() },
+      registro.usuarioId,
+    );
     await this.bd.$transaction([
       this.bd.usuario.update({
         where: { id: registro.usuarioId },

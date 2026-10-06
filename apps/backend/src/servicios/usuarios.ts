@@ -4,6 +4,7 @@ import { conflicto, noEncontrado } from '../dominio/errores';
 import type { Reloj } from '../dominio/reloj';
 import type { Usuario } from '../generated/prisma/client';
 import type { ServicioEventos } from './eventos';
+import type { ServicioVersiones } from './versiones';
 
 /** Datos del usuario conectado que necesitan las rutas. */
 export interface UsuarioSesion {
@@ -32,6 +33,7 @@ export class ServicioUsuarios {
   constructor(
     private readonly bd: BaseDatos,
     private readonly eventos: ServicioEventos,
+    private readonly versiones: ServicioVersiones,
     private readonly reloj: Reloj,
   ) {}
 
@@ -55,6 +57,13 @@ export class ServicioUsuarios {
       );
     }
 
+    // Se guarda cómo estaba la cuenta (sin la contraseña) antes de cambiarla.
+    await this.versiones.guardar(
+      'usuario',
+      id,
+      aUsuarioDto(usuario) as unknown as Record<string, unknown>,
+      actor.id,
+    );
     const ahora = this.reloj.ahora();
     const actualizado = await this.bd.usuario.update({
       where: { id },

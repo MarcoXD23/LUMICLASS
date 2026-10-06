@@ -43,4 +43,6 @@ export interface ReglaDto extends ReglaEntrada {
   id: string;
   creadoEn: string;
   actualizadoEn: string;
+  /** Borrado lógico: fecha en que se eliminó, o null si sigue vigente. */
+  eliminadaEn: string | null;
 }

@@ -24,8 +24,11 @@ export class ServicioSimulador {
   /** Al arrancar: sensores activos y sin presencia; cada interruptor en la posición guardada. */
   async sincronizar(): Promise<void> {
     const [sensores, luces] = await Promise.all([
-      this.bd.sensor.findMany({ select: { id: true } }),
-      this.bd.luz.findMany({ select: { actuadorId: true, estadoReal: true } }),
+      this.bd.sensor.findMany({ where: { inactivoDesde: null }, select: { id: true } }),
+      this.bd.luz.findMany({
+        where: { inactivoDesde: null },
+        select: { actuadorId: true, estadoReal: true },
+      }),
     ]);
     for (const luz of luces) {
       this.driver.forzarLuz(luz.actuadorId, luz.estadoReal === 'on' ? 'on' : 'off');
@@ -45,7 +48,7 @@ export class ServicioSimulador {
       if (!zona) throw noEncontrado('una zona', entrada.zonaId);
     }
     const sensores = await this.bd.sensor.findMany({
-      where: entrada.zonaId ? { zonaId: entrada.zonaId } : {},
+      where: { inactivoDesde: null, ...(entrada.zonaId ? { zonaId: entrada.zonaId } : {}) },
       select: { id: true },
     });
     for (const sensor of sensores) {

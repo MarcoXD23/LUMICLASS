@@ -9,7 +9,7 @@ import { useAccion } from '../hooks/useAccion';
 import { useDatosEnVivo } from '../hooks/useDatosEnVivo';
 import { useSesion } from '../hooks/useSesion';
 import { describirLuz, describirOcupacion } from '../utilidades/estados';
-import { duracionLegible } from '../utilidades/formatoFecha';
+import { duracionLegible, haceCuanto } from '../utilidades/formatoFecha';
 import { FormularioRegla } from './FormularioRegla';
 
 /** Copia de la regla en el formato que espera la API (sin id ni fechas). */
@@ -39,8 +39,10 @@ function explicarRegla(regla: ReglaDto, nombreZona: string | null): string {
 
 /** Reglas de automatización: ver, crear, editar, activar/desactivar y borrar. */
 export function Reglas() {
-  const reglas = useDatosEnVivo(api.reglas, {
+  const [verEliminadas, setVerEliminadas] = useState(false);
+  const reglas = useDatosEnVivo((senal) => api.reglas(senal, verEliminadas), {
     filtrarEvento: (evento) => evento.tipo === 'regla_cambiada',
+    clave: String(verEliminadas),
   });
   const zonas = useDatosEnVivo(api.zonas, {
     filtrarEvento: (evento) => evento.tipo === 'modo_cambiado',
@@ -76,7 +78,8 @@ export function Reglas() {
   };
 
   const alEliminar = (regla: ReglaDto) => {
-    if (window.confirm(`¿Eliminar la regla "${regla.nombre}"?`)) {
+    const mensaje = `¿Eliminar la regla "${regla.nombre}"? Deja de aplicarse y sale de la lista, pero queda guardada en el historial.`;
+    if (window.confirm(mensaje)) {
       void cambiarRegla.ejecutar(regla, 'eliminar');
     }
   };
@@ -101,6 +104,14 @@ export function Reglas() {
         de menor número de prioridad.
         {!esAdmin && ' Solo el administrador puede crear o cambiar reglas.'}
       </p>
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={verEliminadas}
+          onChange={(e) => setVerEliminadas(e.target.checked)}
+        />
+        Mostrar también las reglas eliminadas (quedan guardadas)
+      </label>
       <AvisoConexion
         error={reglas.error}
         actualizadoEn={reglas.actualizadoEn}
@@ -133,11 +144,12 @@ export function Reglas() {
       <ul className="flex flex-col gap-3">
         {reglas.datos.map((regla) => {
           const ocupada = cambiarRegla.enCurso === regla.id;
+          const eliminada = regla.eliminadaEn !== null;
           return (
             <li
               key={regla.id}
               className={`flex flex-col gap-2 rounded-2xl border border-borde bg-superficie p-4 shadow-sm ${
-                regla.activa ? '' : 'opacity-70'
+                regla.activa && !eliminada ? '' : 'opacity-70'
               }`}
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -154,8 +166,14 @@ export function Reglas() {
                   descripcion={{ texto: '', icono: Power, tono: regla.activa ? 'ok' : 'neutro' }}
                   texto={regla.activa ? 'Activa' : 'Desactivada'}
                 />
+                {eliminada && (
+                  <Insignia
+                    descripcion={{ texto: 'Eliminada', icono: Trash2, tono: 'error' }}
+                    texto={`Eliminada ${haceCuanto(regla.eliminadaEn)}`}
+                  />
+                )}
               </div>
-              {esAdmin && (
+              {esAdmin && !eliminada && (
                 <div className="flex flex-wrap gap-2">
                   <BotonRegla
                     icono={Power}

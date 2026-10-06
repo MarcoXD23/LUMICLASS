@@ -13,8 +13,13 @@ import { aLuzDto, type ServicioLuces } from './luces';
 import { aSensorDto, calcularOcupacion } from './sensores';
 
 const incluirContenido = {
-  luces: { include: { actuador: true }, orderBy: { nombre: 'asc' } },
-  sensores: { orderBy: { nombre: 'asc' } },
+  // Solo lo vigente (borrado lógico).
+  luces: {
+    where: { inactivoDesde: null },
+    include: { actuador: true },
+    orderBy: { nombre: 'asc' },
+  },
+  sensores: { where: { inactivoDesde: null }, orderBy: { nombre: 'asc' } },
 } as const;
 
 export class ServicioZonas {
@@ -26,6 +31,7 @@ export class ServicioZonas {
 
   async listar(): Promise<ZonaDto[]> {
     const zonas = await this.bd.zona.findMany({
+      where: { inactivoDesde: null },
       include: incluirContenido,
       orderBy: { orden: 'asc' },
     });

@@ -46,7 +46,6 @@ describe('leerEntorno', () => {
       SIM_DEMORA_LENTO_MS: 2000,
       MAX_CONEXIONES_SSE: 50,
       LATIDO_SSE_MS: 15_000,
-      DIAS_RETENCION_EVENTOS: 90,
       DURACION_SESION_HORAS: 8,
       COOKIE_SEGURA: false,
       CORREO_MODO: 'simulado',
