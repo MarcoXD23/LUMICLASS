@@ -25,13 +25,17 @@
 - Puerto **8001** y cookie **`lumiclass_session`** para convivir con otro proyecto Laravel en el mismo equipo.
 - El proyecto anterior en Node.js quedó en el commit `d4e4b20` (rama `feature/fase-4-backend-api`).
 
-## 2. Tiempo real (PROPUESTA, Fase 7)
+## 2. Tiempo real (CONFIRMADO, Fase 7)
 
-- **Qué:** consulta periódica (polling) cada 2–3 s a `/api/v1/salones/{id}/estado`; las órdenes van por REST.
-  Esa misma consulta hace avanzar el tick (sección 6).
+- **Qué:** consulta periódica (polling) cada 3 s a `/api/v1/salones/{id}/estado` (historial: cada 5 s en su primera
+  página); las órdenes van por REST. Esa misma consulta hace avanzar el tick (sección 6).
 - **Por qué:** `php artisan serve` en Windows atiende **una petición a la vez**; una conexión SSE abierta lo
   bloquearía. El polling es estable y fácil de presentar. Si se despliega con un servidor multi-proceso, se puede pasar a SSE.
-- **Prueba:** dos navegadores abiertos; encender una luz en uno y verla cambiar en el otro en ≤ 3 s.
+- **Robustez** (`resources/js/sondeo.js`): si una consulta falla, se espera cada vez más (3 → 6 → 12 → máx. 30 s);
+  se pausa con la pestaña oculta o sin red y consulta apenas vuelve; al recuperarse avisa "Conexión recuperada".
+  Mientras tanto se conservan los últimos datos con la marca "Datos desactualizados (última actualización hace X s)".
+- **Prueba:** dos navegadores abiertos; encender una luz en uno y verla cambiar en el otro en ≤ 3 s. Apagar el
+  servidor: aparece la banda roja; encenderlo: "Conexión recuperada".
 
 ## 3. Estructura de carpetas (CONFIRMADO)
 
@@ -76,6 +80,7 @@ salones** y puede hacer todo, pero **solo** sobre lo suyo. Un único rol (sin ad
 | `eventos`                | id, salon_id, tipo, origen (`usuario`/`regla`/`sistema`/`simulador`), severidad, entidad_tipo, entidad_id, mensaje, datos, created_at |
 | `solicitudes_procesadas` | user_id + id_solicitud (únicos juntos), ruta, codigo_http, respuesta: evita ejecutar dos veces la misma orden  |
 | `personal_access_tokens` | tokens de Sanctum para scripts y (Fase 8) la placa                                                             |
+| `cambios_luz` · `cambios_ocupacion` | desde cuándo cada luz/zona está en cada estado: base de las estadísticas (sección 5)          |
 
 - Borrar un salón borra en cascada sus zonas, luces, servos, sensores, reglas e historial. Borrar una cuenta borra sus salones.
 
@@ -115,7 +120,8 @@ Los tres de `/auth` admiten 5 intentos por minuto (`429 demasiados_intentos`).
 | PATCH               | `/zonas/{id}/modo`                                | `{ "modo": "automatico" \| "manual" }`                    |
 | POST                | `/luces/{id}/comando` · `/zonas/{id}/comando`     | `{ "accion": "encender" \| "apagar", "id_solicitud": "<uuid>" }` → `resultado`: `completada` · `pendiente` (HTTP 202) · `fallida` · `sin_cambio` |
 | PUT · DELETE        | `/reglas/{id}`                                    | Reemplazar · borrar regla                                 |
-| GET                 | `/estadisticas?rango`                             | PROPUESTA, Fase 7                                         |
+| GET                 | `/salones/{id}/eventos.csv?…mismos filtros`       | Historial en CSV (Excel: `;` y UTF-8 con BOM; máx. 10 000 filas) |
+| GET                 | `/salones/{id}/estadisticas?rango=hoy\|7d\|30d&zona_horaria=America/Bogota` | Estadísticas (ver abajo)        |
 | *                   | `/salones/{id}/sim/...` · `/sim/...`              | Simulador, ver sección 6 (solo con `LUMICLASS_DRIVER=simulado`; si no, 404) |
 
 **Aislamiento entre cuentas:** cada `{id}` de la ruta se busca solo entre los recursos de la cuenta que
@@ -141,7 +147,20 @@ que si no existiera, para no revelar qué existe. Lo prueba `tests/Feature/Api/A
 - **Cuentas:** correo repetido (sin importar mayúsculas) → `400`; login fallido → `401 credenciales_invalidas`
   con el mismo mensaje exista o no el correo; sesión vencida o sin token CSRF → `419 sesion_expirada`.
 - **Errores internos:** `500 error_interno` sin detalles; el detalle queda en `storage/logs`.
-- **API caída (Fase 6–7):** el frontend muestra "Sin conexión con el servidor" y conserva los últimos datos, marcados como desactualizados.
+- **API caída:** el frontend muestra "Sin conexión con el servidor" y conserva los últimos datos, marcados como desactualizados (sección 2).
+- **Sesión vencida en el navegador (419):** el cliente pide un token CSRF nuevo y reintenta la orden una vez, sin molestar al usuario.
+- **Errores de JavaScript no previstos y pérdida de red:** se muestran como aviso en español.
+- **Páginas web de error** (404, 419, 429, 500, 503) en español, con estilos en línea para verse aunque falle Vite.
+
+**Estadísticas (CONFIRMADO, Fase 7)** — `app/Servicios/EstadisticasSalon.php`:
+
+- Se basan en dos tablas de cambios: `cambios_luz` (luz_id, estado, created_at; la escribe el modelo `Luz` al cambiar
+  `estado_real`) y `cambios_ocupacion` (zona_id, ocupacion, created_at; la escribe `RegistroOcupacion` cuando cambian los sensores).
+- Con ellas arma tramos de tiempo y calcula: horas encendidas (por luz y total), horas ocupado (unión de zonas),
+  **horas encendidas con la zona vacía** (intersección: el "desperdicio" que el sistema evita), encendidos/apagados,
+  fallas y órdenes manuales frente a órdenes por regla.
+- Los días se cortan a la medianoche **local del usuario** (`zona_horaria` la envía el navegador); el servidor guarda en UTC.
+- Una luz o zona "desconocida" no suma. El consumo en kWh queda pendiente: requiere la potencia real de los focos.
 
 ## 6. Simulación y automatización (CONFIRMADO, Fase 5)
 
@@ -227,7 +246,8 @@ solo entregan la estructura; cada pantalla pide sus datos a `/api/v1` con la coo
 | `/salones/{id}/control`          | **Control**: cada luz y cada zona, automático/manual                      |
 | `/salones/{id}/sensores`         | **Sensores**: conexión, presencia, última lectura, personas               |
 | `/salones/{id}/reglas`           | **Reglas**: crear, editar, activar/desactivar, borrar                     |
-| `/salones/{id}/historial`        | **Historial** con filtros y paginación                                    |
+| `/salones/{id}/historial`        | **Historial** con filtros, paginación, actualización sola y descarga CSV  |
+| `/salones/{id}/estadisticas`     | **Estadísticas**: totales, horas por día (barras apiladas + tabla) y por luz |
 | `/salones/{id}/simulador`        | **Simulador** (solo con `LUMICLASS_DRIVER=simulado`)                      |
 
 Sin sesión, toda página lleva a `/ingresar`; el salón de otra cuenta responde 404.

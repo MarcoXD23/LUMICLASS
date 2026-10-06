@@ -12,6 +12,7 @@ use App\Enums\SeveridadEvento;
 use App\Enums\TipoEvento;
 use App\Exceptions\ComandoRechazado;
 use App\Models\Actuador;
+use App\Models\CambioLuz;
 use App\Models\Luz;
 use App\Models\Salon;
 use App\Models\Sensor;
@@ -26,6 +27,7 @@ class Simulador
         private readonly MotorReglas $motor,
         private readonly EscenarioSimulado $escenario,
         private readonly RegistroEventos $eventos,
+        private readonly RegistroOcupacion $ocupacion,
     ) {}
 
     /**
@@ -131,12 +133,18 @@ class Simulador
                 'ultimo_resultado' => null,
                 'updated_at' => now(),
             ]);
+            // La actualización masiva no pasa por el modelo: se anotan a mano las luces que cambian.
+            $cambian = Luz::query()->whereIn('zona_id', $zonas)->where('estado_real', '!=', EstadoLuz::Apagada->value)->pluck('id');
+            foreach ($cambian as $luzId) {
+                CambioLuz::create(['luz_id' => $luzId, 'estado' => EstadoLuz::Apagada]);
+            }
             Luz::query()->whereIn('zona_id', $zonas)->update([
                 'estado_deseado' => EstadoLuz::Apagada->value,
                 'estado_real' => EstadoLuz::Apagada->value,
                 'updated_at' => now(),
             ]);
             Zona::query()->whereIn('id', $zonas)->update(['modo' => ModoZona::Automatico->value, 'updated_at' => now()]);
+            $salon->zonas()->each(fn (Zona $zona) => $this->ocupacion->actualizar($zona));
 
             $this->eventos->registrar(TipoEvento::SimuladorReinicio, OrigenEvento::Simulador, 'Escenario del simulador reiniciado.', $salon);
         });

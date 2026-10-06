@@ -9,13 +9,17 @@
         'reglas' => ['Reglas', 'regla', route('salones.reglas', $salon)],
         'historial' => ['Historial', 'historial', route('salones.historial', $salon)],
     ];
+    // En escritorio cabe una sección más; en celular se llega a Estadísticas desde Inicio.
+    $enlacesEscritorio = $enlaces + [
+        'estadisticas' => ['Estadísticas', 'estadisticas', route('salones.estadisticas', $salon)],
+    ];
     $simuladorActivo = config('lumiclass.driver') === 'simulado';
 @endphp
 
 {{-- Escritorio --}}
 <nav class="hidden w-56 shrink-0 lg:block" aria-label="Secciones del salón">
     <ul class="sticky top-20 space-y-1">
-        @foreach ($enlaces as $clave => [$texto, $icono, $url])
+        @foreach ($enlacesEscritorio as $clave => [$texto, $icono, $url])
             <li>
                 <a href="{{ $url }}" @class([
                     'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium',

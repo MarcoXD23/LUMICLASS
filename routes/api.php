@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\EstadisticaController;
 use App\Http\Controllers\Api\EventoController;
 use App\Http\Controllers\Api\LuzController;
 use App\Http\Controllers\Api\ReglaController;
@@ -55,6 +56,8 @@ Route::prefix('v1')->name('api.')->group(function () {
         Route::get('salones/{salon}/reglas', [ReglaController::class, 'index']);
         Route::post('salones/{salon}/reglas', [ReglaController::class, 'store']);
         Route::get('salones/{salon}/eventos', [EventoController::class, 'index']);
+        Route::get('salones/{salon}/eventos.csv', [EventoController::class, 'csv']);
+        Route::get('salones/{salon}/estadisticas', EstadisticaController::class);
 
         Route::get('zonas/{zona}', [ZonaController::class, 'show']);
         Route::patch('zonas/{zona}/modo', [ZonaController::class, 'modo']);

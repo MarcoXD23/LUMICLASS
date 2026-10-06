@@ -57,6 +57,24 @@ export function haceCuanto(iso, ahora = Date.now()) {
     return fechaHora(iso);
 }
 
+/** 9300 → "2 h 35 min"; 2700 → "45 min"; 20 → "menos de 1 min". */
+export function duracion(segundos) {
+    const minutos = Math.round((segundos ?? 0) / 60);
+
+    if (segundos > 0 && minutos === 0) {
+        return 'menos de 1 min';
+    }
+
+    const horas = Math.floor(minutos / 60);
+    const resto = minutos % 60;
+
+    if (!horas) {
+        return `${resto} min`;
+    }
+
+    return resto ? `${horas} h ${resto} min` : `${horas} h`;
+}
+
 /** Texto de una condición de regla: "Ocupado" o "Vacío durante 5 min". */
 export function describirCondicion(condicion) {
     const base = etiqueta('ocupacion', condicion?.presencia);

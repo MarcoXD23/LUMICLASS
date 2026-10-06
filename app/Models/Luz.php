@@ -26,6 +26,21 @@ class Luz extends Model
         ];
     }
 
+    /**
+     * Cada cambio del estado real queda en cambios_luz (base de las estadísticas).
+     * Ojo: las actualizaciones masivas (Luz::query()->update) no disparan esto; quien las use debe registrar el cambio.
+     */
+    protected static function booted(): void
+    {
+        static::created(fn (Luz $luz) => CambioLuz::create(['luz_id' => $luz->id, 'estado' => $luz->estado_real]));
+
+        static::updated(function (Luz $luz) {
+            if ($luz->wasChanged('estado_real')) {
+                CambioLuz::create(['luz_id' => $luz->id, 'estado' => $luz->estado_real]);
+            }
+        });
+    }
+
     /** @return BelongsTo<Zona, $this> */
     public function zona(): BelongsTo
     {

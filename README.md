@@ -61,6 +61,14 @@ Se usa el puerto **8001** y la cookie de sesión **`lumiclass_session`** para qu
 | `php artisan lumiclass:tick`    | Revisa órdenes pendientes de los servos y reglas con tiempo |
 | `php artisan schedule:work`     | (Opcional, otra consola) ejecuta el tick cada 2 s   |
 
+## Qué mostrar en la interfaz
+
+1. Entra con la cuenta demo y abre el salón. En **Simulador** pulsa "Entra gente": en **Inicio** y **Control** las luces se encienden solas.
+2. Pulsa "Queda vacío": tras la espera de la regla (5 min, o 30 s con `LUMICLASS_FACTOR_TIEMPO_REGLAS=0.1`) se apagan.
+3. En **Simulador**, pon un servo en "Falla" y da una orden en **Control**: la luz queda "Desconocido" y aparece la alerta.
+4. **Estadísticas** muestra cuántas horas estuvieron encendidas las luces y cuántas con la zona vacía. **Historial** se puede descargar en CSV.
+5. Apaga el servidor con Ctrl+C: aparece "Datos desactualizados". Vuelve a encenderlo: "Conexión recuperada".
+
 ## Probar el simulador (PowerShell)
 
 Con el servidor encendido (`php artisan serve --port=8001`), en otra consola:
@@ -116,4 +124,4 @@ Las reglas de trabajo están en [CLAUDE.md](CLAUDE.md).
 
 LUMICLASS está construido con [Laravel](https://laravel.com), un framework web de PHP. Documentación oficial: https://laravel.com/docs. Laravel es software de código abierto con licencia [MIT](https://opensource.org/licenses/MIT).
 
-**Estado:** Fase 6 completada (interfaz web con diseño propio PROPUESTA, conectada a la API y al simulador), con pruebas.
+**Estado:** Fase 7 completada (estadísticas, historial en CSV, tiempo real con reintentos y manejo de errores), con pruebas.

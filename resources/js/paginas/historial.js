@@ -1,8 +1,14 @@
 import { api } from '../api';
 import { etiqueta, etiquetas, fechaHora } from '../formato';
+import { crearSondeo } from '../sondeo';
 
-/** Historial del salón con filtros y paginación. */
+/**
+ * Historial del salón con filtros, paginación y descarga CSV.
+ * En la primera página se actualiza solo cada 5 s (los eventos nuevos aparecen arriba).
+ */
 export function historial(salonId) {
+    let sondeo = null;
+
     return {
         salonId,
         eventos: [],
@@ -16,19 +22,40 @@ export function historial(salonId) {
         etiqueta,
         fechaHora,
 
-        async init() {
-            await this.cargar();
+        init() {
+            sondeo = crearSondeo(async () => {
+                // En otras páginas no se recarga solo: los eventos nuevos correrían la lista mientras se lee.
+                if (this.pagina === 1) {
+                    await this.cargar();
+                }
+            }, 5000);
+            sondeo.iniciar();
         },
 
-        async cargar() {
-            this.cargando = true;
-            const parametros = new URLSearchParams({ page: this.pagina, por_pagina: 20 });
+        destroy() {
+            sondeo?.detener();
+        },
 
+        parametros() {
+            const parametros = new URLSearchParams();
             for (const [clave, valor] of Object.entries(this.filtros)) {
                 if (valor) {
                     parametros.set(clave, valor);
                 }
             }
+
+            return parametros;
+        },
+
+        /** Enlace de descarga con los mismos filtros que la lista. */
+        get urlCsv() {
+            return `/api/v1/salones/${this.salonId}/eventos.csv?${this.parametros()}`;
+        },
+
+        async cargar() {
+            const parametros = this.parametros();
+            parametros.set('page', this.pagina);
+            parametros.set('por_pagina', 20);
 
             try {
                 const r = await api('GET', `/salones/${this.salonId}/eventos?${parametros}`);
@@ -37,14 +64,24 @@ export function historial(salonId) {
                 this.errorCarga = null;
             } catch (error) {
                 this.errorCarga = error.message;
+                throw error;
             } finally {
                 this.cargando = false;
             }
         },
 
+        async recargarAhora() {
+            this.cargando = true;
+            try {
+                await this.cargar();
+            } catch {
+                // El mensaje ya quedó en errorCarga.
+            }
+        },
+
         filtrar() {
             this.pagina = 1;
-            this.cargar();
+            this.recargarAhora();
         },
 
         limpiar() {
@@ -54,7 +91,7 @@ export function historial(salonId) {
 
         irA(pagina) {
             this.pagina = pagina;
-            this.cargar();
+            this.recargarAhora();
         },
     };
 }

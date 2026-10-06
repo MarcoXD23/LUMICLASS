@@ -17,5 +17,6 @@ Route::middleware('auth')->controller(PaginaController::class)->group(function (
     Route::get('salones/{salon}/sensores', 'sensores')->name('salones.sensores');
     Route::get('salones/{salon}/reglas', 'reglas')->name('salones.reglas');
     Route::get('salones/{salon}/historial', 'historial')->name('salones.historial');
+    Route::get('salones/{salon}/estadisticas', 'estadisticas')->name('salones.estadisticas');
     Route::get('salones/{salon}/simulador', 'simulador')->name('salones.simulador');
 });

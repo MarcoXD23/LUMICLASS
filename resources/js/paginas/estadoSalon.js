@@ -1,10 +1,11 @@
 import { api } from '../api';
+import { avisar } from '../avisos';
 import { etiqueta, haceCuanto } from '../formato';
 import { crearSondeo } from '../sondeo';
 
 /**
  * Base de Inicio, Control, Sensores y Simulador: trae /salones/{id}/estado cada 3 s.
- * Si falla, conserva los últimos datos y avisa que están desactualizados.
+ * Si falla, conserva los últimos datos, los marca como desactualizados y reintenta cada vez más espaciado.
  */
 export function estadoSalon(salonId) {
     let sondeo = null;
@@ -18,7 +19,9 @@ export function estadoSalon(salonId) {
         ahora: Date.now(),
 
         init() {
-            sondeo = crearSondeo(() => this.cargar());
+            sondeo = crearSondeo(() => this.cargar(), 3000, {
+                alRecuperar: () => avisar('exito', 'Conexión recuperada. Los datos están al día.'),
+            });
             sondeo.iniciar();
             // Refresca los "hace X s" aunque los datos no cambien.
             this._reloj = setInterval(() => (this.ahora = Date.now()), 1000);
@@ -37,6 +40,7 @@ export function estadoSalon(salonId) {
                 this.ultimaCarga = Date.now();
             } catch (error) {
                 this.errorConexion = error.message;
+                throw error;
             } finally {
                 this.cargando = false;
             }
@@ -44,6 +48,11 @@ export function estadoSalon(salonId) {
 
         recargar() {
             return sondeo.ahora();
+        },
+
+        /** Texto "hace X s" de la última carga correcta (para la marca de datos desactualizados). */
+        get desactualizadoDesde() {
+            return this.ultimaCarga ? haceCuanto(new Date(this.ultimaCarga).toISOString(), this.ahora) : null;
         },
 
         get zonas() {

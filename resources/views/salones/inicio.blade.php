@@ -100,9 +100,14 @@
                     </template>
                 </div>
 
-                <a href="{{ route('salones.control', $salon) }}" class="btn btn-primario w-full sm:w-auto">
-                    <x-icono nombre="control" /> Ir a controlar las luces
-                </a>
+                <div class="flex flex-col gap-2 sm:flex-row">
+                    <a href="{{ route('salones.control', $salon) }}" class="btn btn-primario">
+                        <x-icono nombre="control" /> Ir a controlar las luces
+                    </a>
+                    <a href="{{ route('salones.estadisticas', $salon) }}" class="btn btn-secundario">
+                        <x-icono nombre="estadisticas" /> Ver estadísticas
+                    </a>
+                </div>
             </div>
         </template>
     </div>

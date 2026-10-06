@@ -2,10 +2,15 @@
 
 @section('contenido')
     <div x-data="historial({{ $salon->id }})" class="space-y-4">
-        <div>
-            <h1 class="text-2xl font-bold">Historial</h1>
-            <p class="text-sm text-slate-600">Encendidos, apagados, presencia, cambios de modo y errores, del más reciente al
-                más antiguo.</p>
+        <div class="flex items-end justify-between gap-3">
+            <div>
+                <h1 class="text-2xl font-bold">Historial</h1>
+                <p class="text-sm text-slate-600">Encendidos, apagados, presencia, cambios de modo y errores, del más reciente
+                    al más antiguo. La primera página se actualiza sola.</p>
+            </div>
+            <a :href="urlCsv" class="btn btn-secundario shrink-0" download aria-label="Descargar CSV">
+                <x-icono nombre="descargar" clase="size-4" /> <span class="hidden sm:inline">Descargar CSV</span>
+            </a>
         </div>
 
         <form class="tarjeta grid gap-3 sm:grid-cols-2 lg:grid-cols-5 lg:items-end" @submit.prevent="filtrar">

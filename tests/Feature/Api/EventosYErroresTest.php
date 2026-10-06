@@ -63,6 +63,29 @@ class EventosYErroresTest extends TestCase
             ->assertJsonPath('data.0.tipo', 'comando.rechazado');
     }
 
+    public function test_csv_con_los_filtros_aplicados(): void
+    {
+        $this->registrar(TipoEvento::LuzComando);
+        $this->registrar(TipoEvento::ActuadorFalla, SeveridadEvento::Error);
+
+        $respuesta = $this->get("/api/v1/salones/{$this->salon->id}/eventos.csv?severidad=error")->assertOk();
+
+        $this->assertStringContainsString('text/csv', $respuesta->headers->get('Content-Type'));
+        $this->assertStringContainsString('attachment; filename=historial-', $respuesta->headers->get('Content-Disposition'));
+
+        $lineas = array_values(array_filter(explode("\n", $respuesta->streamedContent())));
+        $this->assertStringStartsWith("\xEF\xBB\xBFfecha_utc;tipo;origen;severidad;mensaje", $lineas[0]);
+        $this->assertCount(2, $lineas);
+        $this->assertStringContainsString('actuador.falla;sistema;error;"Evento de prueba"', $lineas[1]);
+    }
+
+    public function test_csv_de_otra_cuenta_responde_404(): void
+    {
+        $this->iniciarSesion();
+
+        $this->getJson("/api/v1/salones/{$this->salon->id}/eventos.csv")->assertNotFound();
+    }
+
     public function test_filtros_invalidos_responden_400(): void
     {
         $this->getJson($this->eventos('?tipo=inventado&desde=2026-10-06&hasta=2026-10-01&por_pagina=500'))

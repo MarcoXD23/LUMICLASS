@@ -11,7 +11,7 @@ class PaginasTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const PAGINAS_DE_SALON = ['', '/control', '/sensores', '/reglas', '/historial', '/simulador'];
+    private const PAGINAS_DE_SALON = ['', '/control', '/sensores', '/reglas', '/historial', '/estadisticas', '/simulador'];
 
     public function test_sin_sesion_todo_lleva_a_ingresar(): void
     {
@@ -57,6 +57,14 @@ class PaginasTest extends TestCase
         foreach (self::PAGINAS_DE_SALON as $pagina) {
             $this->get("/salones/{$salonAjeno->id}{$pagina}")->assertNotFound();
         }
+    }
+
+    public function test_paginas_de_error_en_espanol(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $this->get('/salones/999')->assertNotFound()->assertSee('Página no encontrada')->assertSee('lang="es"', false);
+        $this->get('/no-existe')->assertNotFound()->assertSee('no pertenece a tu cuenta');
     }
 
     public function test_con_driver_real_no_hay_simulador(): void

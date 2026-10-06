@@ -15,7 +15,10 @@ use App\Models\Sensor;
  */
 class ServicioSensores
 {
-    public function __construct(private readonly RegistroEventos $eventos) {}
+    public function __construct(
+        private readonly RegistroEventos $eventos,
+        private readonly RegistroOcupacion $ocupacion,
+    ) {}
 
     /**
      * Devuelve true si la presencia cambió.
@@ -44,6 +47,7 @@ class ServicioSensores
         $sensor->save();
 
         if ($cambio) {
+            $this->ocupacion->actualizar($sensor->zona);
             $this->eventos->registrar(
                 TipoEvento::SensorPresencia,
                 $origen,
@@ -72,6 +76,7 @@ class ServicioSensores
         }
 
         $sensor->save();
+        $this->ocupacion->actualizar($sensor->zona);
 
         $this->eventos->registrar(
             TipoEvento::SensorConexion,

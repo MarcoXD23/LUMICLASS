@@ -34,11 +34,29 @@ async function asegurarCsrf() {
 }
 
 /**
+ * Llama a la API y devuelve el JSON. Lanza ErrorApi (en español) si algo falla.
+ *
  * @param {'GET'|'POST'|'PUT'|'PATCH'|'DELETE'} metodo
  * @param {string} ruta  por ejemplo '/salones/1/estado'
  * @param {object} [cuerpo]
  */
 export async function api(metodo, ruta, cuerpo) {
+    try {
+        return await enviar(metodo, ruta, cuerpo);
+    } catch (error) {
+        // 419: el token CSRF venció (p. ej. la pestaña quedó abierta mucho tiempo). Se pide otro y se reintenta una vez.
+        if (error instanceof ErrorApi && error.estado === 419) {
+            return enviar(metodo, ruta, cuerpo);
+        }
+        throw error;
+    }
+}
+
+async function enviar(metodo, ruta, cuerpo) {
+    if (!navigator.onLine) {
+        throw new ErrorApi(0, 'sin_conexion', 'Este equipo no tiene conexión a la red.');
+    }
+
     if (metodo !== 'GET') {
         await asegurarCsrf();
     }

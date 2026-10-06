@@ -38,6 +38,10 @@
     --color-aviso: #ea580c;
     --color-aviso-suave: #ffedd5;
     --color-aviso-texto: #9a3412;
+
+    /* Gráficos (paleta validada: separación para daltonismo y contraste ≥ 3:1 sobre blanco) */
+    --color-serie-1: #2a78d6; /* encendidas con gente o sin datos */
+    --color-serie-2: #eb6834; /* encendidas con la zona vacía */
 }
 
 @layer base {
