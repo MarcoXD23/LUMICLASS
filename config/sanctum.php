@@ -18,11 +18,13 @@ return [
     |
     */
 
+    // LUMICLASS: el frontend se sirve desde el mismo Laravel, así que se acepta el host de la propia
+    // petición (localhost:8001, 127.0.0.1:8001 o la IP de la red al abrirlo desde un celular).
     'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', sprintf(
-        '%s%s',
+        '%s%s%s',
         'localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1',
         Sanctum::currentApplicationUrlWithPort(),
-        // Sanctum::currentRequestHost(),
+        Sanctum::currentRequestHost(),
     ))),
 
     /*

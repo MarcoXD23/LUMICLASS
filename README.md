@@ -25,11 +25,15 @@ copy .env.example .env        # en macOS/Linux: cp .env.example .env
 php artisan key:generate
 php artisan migrate --seed
 npm install
+npm run build
 php artisan serve --port=8001
 ```
 
-- Aplicación: http://localhost:8001
+- Aplicación: http://localhost:8001 (entra con la cuenta demo de abajo o crea una cuenta)
 - API: http://localhost:8001/api/v1/salud
+- **Desde el celular** (misma red WiFi): `php artisan serve --host=0.0.0.0 --port=8001` y abre `http://IP-DEL-PC:8001` (la IP sale con `ipconfig`). Si Windows pregunta por el firewall, permite el acceso en redes privadas.
+
+`npm run build` compila la interfaz una vez. Si vas a cambiar vistas, CSS o JS, deja `npm run dev` corriendo en otra consola y los cambios se ven al instante.
 
 **Cuentas:** cada persona se registra y solo ve y controla **sus** salones (puede tener varios). `--seed` crea una cuenta de demostración:
 
@@ -112,4 +116,4 @@ Las reglas de trabajo están en [CLAUDE.md](CLAUDE.md).
 
 LUMICLASS está construido con [Laravel](https://laravel.com), un framework web de PHP. Documentación oficial: https://laravel.com/docs. Laravel es software de código abierto con licencia [MIT](https://opensource.org/licenses/MIT).
 
-**Estado:** Fase 5 completada y cuentas multiusuario (registro, login, varios salones por cuenta, datos aislados), con pruebas. El proyecto anterior en Node.js quedó guardado en el commit `d4e4b20` de la rama `feature/fase-4-backend-api`.
+**Estado:** Fase 6 completada (interfaz web con diseño propio PROPUESTA, conectada a la API y al simulador), con pruebas.

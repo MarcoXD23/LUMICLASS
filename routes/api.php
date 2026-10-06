@@ -33,7 +33,7 @@ Route::bind('sensor', $delUsuario(Sensor::class));
 Route::bind('regla', $delUsuario(Regla::class));
 Route::bind('actuador', $delUsuario(Actuador::class));
 
-Route::prefix('v1')->group(function () {
+Route::prefix('v1')->name('api.')->group(function () {
     Route::get('salud', SaludController::class);
 
     // 5 intentos por minuto: frena a quien prueba contraseñas.

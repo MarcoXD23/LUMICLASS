@@ -2,8 +2,103 @@
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
+@source '../js/**/*.js';
 
+/*
+ * Diseño PROPUESTA (sin capturas de Figma todavía). Los colores de estado están aquí
+ * para cambiarlos en un solo lugar. Siempre se usan junto con un ícono y un texto.
+ */
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* Marca */
+    --color-marca-50: #eef2ff;
+    --color-marca-100: #e0e7ff;
+    --color-marca-600: #4f46e5;
+    --color-marca-700: #4338ca;
+    --color-marca-900: #1e1b4b;
+
+    /* Estados */
+    --color-encendida: #f59e0b;
+    --color-encendida-suave: #fef3c7;
+    --color-encendida-texto: #92400e;
+    --color-apagada: #6b7280;
+    --color-apagada-suave: #f3f4f6;
+    --color-apagada-texto: #374151;
+    --color-ocupado: #059669;
+    --color-ocupado-suave: #d1fae5;
+    --color-ocupado-texto: #065f46;
+    --color-vacio: #0284c7;
+    --color-vacio-suave: #e0f2fe;
+    --color-vacio-texto: #075985;
+    --color-error: #dc2626;
+    --color-error-suave: #fee2e2;
+    --color-error-texto: #991b1b;
+    --color-aviso: #ea580c;
+    --color-aviso-suave: #ffedd5;
+    --color-aviso-texto: #9a3412;
+}
+
+@layer base {
+    body {
+        @apply bg-slate-50 text-slate-900 antialiased;
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+}
+
+@layer components {
+    .tarjeta {
+        @apply rounded-2xl border border-slate-200 bg-white p-4 shadow-sm;
+    }
+
+    .titulo-seccion {
+        @apply text-sm font-semibold uppercase tracking-wide text-slate-500;
+    }
+
+    .btn {
+        @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition
+            focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-marca-600
+            disabled:cursor-not-allowed disabled:opacity-50;
+    }
+
+    .btn-primario {
+        @apply bg-marca-600 text-white hover:bg-marca-700;
+    }
+
+    .btn-secundario {
+        @apply border border-slate-300 bg-white text-slate-800 hover:bg-slate-50;
+    }
+
+    .btn-peligro {
+        @apply bg-error text-white hover:brightness-95;
+    }
+
+    .btn-encender {
+        @apply bg-encendida text-slate-900 hover:brightness-95;
+    }
+
+    .btn-apagar {
+        @apply bg-slate-700 text-white hover:bg-slate-800;
+    }
+
+    .campo {
+        @apply block min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base
+            focus:border-marca-600 focus:outline-none focus:ring-2 focus:ring-marca-100;
+    }
+
+    .etiqueta {
+        @apply mb-1 block text-sm font-medium text-slate-700;
+    }
+
+    .error-campo {
+        @apply mt-1 text-sm text-error-texto;
+    }
+
+    .insignia {
+        @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold;
+    }
 }

@@ -50,4 +50,4 @@ Debe distinguirse a simple vista: ocupado/vacío, luces on/off, automático/manu
 9. Pruebas completas y corrección de errores.
 10. Preparación de la presentación: README, guía de demo, guion de pruebas.
 
-Estado actual: Fase 5 completada en Laravel 13 (puerto 8001, cookie lumiclass_session; API /api/v1, simulador y motor de reglas) más cuentas multiusuario con Sanctum (rutas por salón: /api/v1/salones/{id}/...), con pruebas. El proyecto Node anterior está en el commit d4e4b20. Pendiente: respuestas de la Fase 1 y capturas en `diseno/` (necesarias para la Fase 6). Siguiente: Fase 6.
+Estado actual: Fase 6 completada en Laravel 13 (puerto 8001, cookie lumiclass_session): API /api/v1 con cuentas multiusuario (Sanctum), simulador, motor de reglas e interfaz Blade + Alpine + Tailwind con diseño propio PROPUESTA (no hay capturas en `diseno/`). El proyecto Node anterior está en el commit d4e4b20. Pendiente: resto de respuestas de la Fase 1 (hardware, entrega, presentación) y capturas de Figma si existen. Siguiente: Fase 7.

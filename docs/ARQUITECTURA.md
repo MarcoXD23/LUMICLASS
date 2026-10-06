@@ -210,9 +210,32 @@ Un candado evita que dos ticks procesen lo mismo a la vez.
    - Sin heartbeat durante 30 s → sensores y servo marcados `inactivo`.
 4. **Seguridad eléctrica:** ver el aviso al inicio de este documento.
 
-## 8. Pantallas (sujetas al diseño de `diseno/`)
+## 8. Pantallas (CONFIRMADO, Fase 6; diseño PROPUESTA)
 
-**Inicio** (dashboard), **Control** (luces y zonas), **Sensores**, **Reglas**, **Historial**, **Simulador**.
+> No hay capturas de Figma en `diseno/`: el diseño es **propio (PROPUESTA)**, mobile-first. Los colores de
+> estado están en `resources/css/app.css` (`@theme`) para cambiarlos en un solo lugar cuando llegue Figma.
+
+**Tecnología:** Blade + Alpine.js + Tailwind (Vite), servido por el mismo Laravel en el puerto 8001. Las vistas
+solo entregan la estructura; cada pantalla pide sus datos a `/api/v1` con la cookie de sesión y CSRF
+(`resources/js/api.js`) y se refresca cada 3 s (`resources/js/sondeo.js`).
+
+| Ruta web                         | Pantalla                                                                  |
+| -------------------------------- | ------------------------------------------------------------------------- |
+| `/ingresar` · `/registro`        | Cuentas (sin sesión). Con sesión llevan a `/salones`.                     |
+| `/salones`                       | Mis salones: crear (zonas y luces por zona), renombrar, borrar            |
+| `/salones/{id}`                  | **Inicio**: ocupación, luces encendidas, sensores activos, alertas, zonas |
+| `/salones/{id}/control`          | **Control**: cada luz y cada zona, automático/manual                      |
+| `/salones/{id}/sensores`         | **Sensores**: conexión, presencia, última lectura, personas               |
+| `/salones/{id}/reglas`           | **Reglas**: crear, editar, activar/desactivar, borrar                     |
+| `/salones/{id}/historial`        | **Historial** con filtros y paginación                                    |
+| `/salones/{id}/simulador`        | **Simulador** (solo con `LUMICLASS_DRIVER=simulado`)                      |
+
+Sin sesión, toda página lleva a `/ingresar`; el salón de otra cuenta responde 404.
+Navegación: barra inferior en celular y barra lateral en escritorio.
+
+**Componentes reutilizables** (`resources/views/components/`): `icono` (SVG en línea, sin internet),
+`insignia-luz`, `insignia-ocupacion`, `insignia-modo`, `insignia-conexion`, `campo`, `navegacion`, `avisos`,
+`aviso-conexion`. Un componente Alpine por pantalla en `resources/js/paginas/`.
 
 | Estado              | Color    | Además                        |
 | ------------------- | -------- | ----------------------------- |
@@ -223,7 +246,8 @@ Un candado evita que dos ticks procesen lo mismo a la vez.
 | Error / falla       | Rojo     | Ícono de alerta + texto       |
 | Automático / manual | —        | Insignia con ícono            |
 
-Siempre ícono y texto además del color, para que se entienda a simple vista y sea accesible.
+Siempre ícono y texto además del color, para que se entienda a simple vista y sea accesible. Una luz
+"desconocida" (el servo falló o no respondió) se muestra en naranja con el motivo.
 
 ## Pendiente
 

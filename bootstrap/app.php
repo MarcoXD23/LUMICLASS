@@ -22,6 +22,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // El frontend (mismo dominio, puerto 8001) usa la cookie de sesión; scripts y placa usan token.
         $middleware->statefulApi();
+
+        // Páginas web: sin sesión van a ingresar; con sesión, "ingresar" y "registro" llevan a sus salones.
+        $middleware->redirectGuestsTo('/ingresar');
+        $middleware->redirectUsersTo('/salones');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
