@@ -205,3 +205,21 @@ export class EventSourceFalso {
     this.onerror?.(new Event('error'));
   }
 }
+
+/** Respuestas de GET /auth/sesion para las pruebas. */
+export const sesionAdmin = {
+  id: 'u-admin',
+  nombre: 'Admin Prueba',
+  correo: 'admin@lumiclass.local',
+  rol: 'admin' as const,
+};
+export const sesionUsuario = {
+  id: 'u-docente',
+  nombre: 'Docente Prueba',
+  correo: 'docente@lumiclass.local',
+  rol: 'usuario' as const,
+};
+export const sinSesion = {
+  estado: 401,
+  cuerpo: { error: { codigo: 'NO_AUTENTICADO', mensaje: 'No has iniciado sesión' } },
+};

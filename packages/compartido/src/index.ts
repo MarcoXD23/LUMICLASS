@@ -10,3 +10,4 @@ export * from './esquemas/reglas';
 export * from './esquemas/eventos';
 export * from './esquemas/simulador';
 export * from './esquemas/estadisticas';
+export * from './esquemas/auth';

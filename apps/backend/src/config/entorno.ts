@@ -23,6 +23,22 @@ const esquemaEntorno = z.object({
   LATIDO_SSE_MS: z.coerce.number().int().min(1000).max(120_000).default(15_000),
   /** Días que se guardan los eventos del historial. */
   DIAS_RETENCION_EVENTOS: z.coerce.number().int().min(1).max(3650).default(90),
+  /** Cuánto dura una sesión iniciada. */
+  DURACION_SESION_HORAS: z.coerce.number().min(0.01).max(72).default(8),
+  /** true solo con HTTPS: la cookie de sesión no viaja por HTTP. */
+  COOKIE_SEGURA: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
+  /** Por ahora solo "simulado": los correos van a la consola y a la bandeja de prueba. */
+  CORREO_MODO: z.enum(['simulado']).default('simulado'),
+  /** Dirección de la app para los enlaces de los correos. */
+  URL_APP: z.url().default('http://localhost:5173'),
+  /** Primer administrador (se crea con los datos iniciales). */
+  ADMIN_CORREO: z.email().default('admin@lumiclass.local'),
+  ADMIN_NOMBRE: z.string().min(2).default('Administrador'),
+  /** Si falta, se genera una al crear el admin y se muestra en la consola. */
+  ADMIN_CONTRASENA: z.string().min(8).optional(),
 });
 
 export type Entorno = z.infer<typeof esquemaEntorno>;

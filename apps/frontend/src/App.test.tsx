@@ -10,6 +10,7 @@ import {
   redCaida,
   reglasEjemplo,
   saludEjemplo,
+  sesionAdmin,
   zonaEjemplo,
 } from './pruebas/apiFalsa';
 
@@ -30,6 +31,7 @@ const renderizar = (ruta = '/') =>
 describe('App', () => {
   it('muestra el hardware y el dashboard (sin tiempo real, actualiza cada 5 s)', async () => {
     instalarApiFalsa({
+      'GET /auth/sesion': { cuerpo: sesionAdmin },
       'GET /salud': { cuerpo: saludEjemplo },
       'GET /salon/estado': { cuerpo: estadoSalonEjemplo() },
     });
@@ -43,6 +45,7 @@ describe('App', () => {
     vi.stubGlobal('EventSource', EventSourceFalso);
     let encendida = false;
     instalarApiFalsa({
+      'GET /auth/sesion': { cuerpo: sesionAdmin },
       'GET /salud': { cuerpo: saludEjemplo },
       'GET /salon/estado': async () => ({
         cuerpo: estadoSalonEjemplo({
@@ -69,6 +72,7 @@ describe('App', () => {
 
   it('navega entre páginas con el menú', async () => {
     instalarApiFalsa({
+      'GET /auth/sesion': { cuerpo: sesionAdmin },
       'GET /salud': { cuerpo: saludEjemplo },
       'GET /salon/estado': { cuerpo: estadoSalonEjemplo() },
       'GET /reglas': { cuerpo: reglasEjemplo },
@@ -86,6 +90,7 @@ describe('App', () => {
 
   it('oculta el simulador cuando el hardware es real', async () => {
     instalarApiFalsa({
+      'GET /auth/sesion': { cuerpo: sesionAdmin },
       'GET /salud': { cuerpo: { ...saludEjemplo, driver: 'real' } },
       'GET /salon/estado': { cuerpo: estadoSalonEjemplo() },
     });
@@ -95,7 +100,11 @@ describe('App', () => {
   });
 
   it('muestra un aviso si la API está caída', async () => {
-    instalarApiFalsa({ 'GET /salud': redCaida, 'GET /salon/estado': redCaida });
+    instalarApiFalsa({
+      'GET /auth/sesion': { cuerpo: sesionAdmin },
+      'GET /salud': redCaida,
+      'GET /salon/estado': redCaida,
+    });
     renderizar();
     expect(
       await screen.findByText('Sin conexión con el servidor', { selector: 'p' }),
@@ -104,6 +113,7 @@ describe('App', () => {
 
   it('redirige rutas desconocidas al inicio', async () => {
     instalarApiFalsa({
+      'GET /auth/sesion': { cuerpo: sesionAdmin },
       'GET /salud': { cuerpo: saludEjemplo },
       'GET /salon/estado': { cuerpo: estadoSalonEjemplo() },
     });

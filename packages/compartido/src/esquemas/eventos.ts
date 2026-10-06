@@ -9,6 +9,12 @@ export const TIPOS_EVENTO = [
   'regla_cambiada',
   'error_actuador',
   'error_sensor',
+  'sesion_iniciada',
+  'sesion_cerrada',
+  'login_fallido',
+  'usuario_registrado',
+  'usuario_cambiado',
+  'contrasena_cambiada',
   'sistema',
 ] as const;
 export const esquemaTipoEvento = z.enum(TIPOS_EVENTO);

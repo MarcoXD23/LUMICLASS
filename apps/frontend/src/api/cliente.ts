@@ -3,6 +3,9 @@ import type { RespuestaError } from '@lumiclass/compartido';
 const BASE = '/api/v1';
 const TIEMPO_MAXIMO_MS = 8000;
 
+/** Funciones que se llaman cuando la API responde 401 (sesión vencida). */
+export const avisosSesionVencida = new Set<() => void>();
+
 /** Error de la API con un mensaje listo para mostrar al usuario. */
 export class ErrorApi extends Error {
   constructor(
@@ -67,6 +70,10 @@ export async function pedir<T>(ruta: string, opciones: OpcionesPedido = {}): Pro
   }
 
   if (!respuesta.ok) {
+    // La sesión venció o se cerró en otro lado: avisar para volver al login.
+    if (respuesta.status === 401 && !ruta.startsWith('/auth/')) {
+      for (const aviso of avisosSesionVencida) aviso();
+    }
     if (esRespuestaError(datos)) {
       throw new ErrorApi(datos.error.codigo, datos.error.mensaje, respuesta.status);
     }

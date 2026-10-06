@@ -7,6 +7,7 @@ import { Cargando, MensajeError, SinElementos } from '../componentes/EstadoCarga
 import { Insignia } from '../componentes/Insignia';
 import { useAccion } from '../hooks/useAccion';
 import { useDatosEnVivo } from '../hooks/useDatosEnVivo';
+import { useSesion } from '../hooks/useSesion';
 import { describirLuz, describirOcupacion } from '../utilidades/estados';
 import { duracionLegible } from '../utilidades/formatoFecha';
 import { FormularioRegla } from './FormularioRegla';
@@ -45,6 +46,7 @@ export function Reglas() {
     filtrarEvento: (evento) => evento.tipo === 'modo_cambiado',
   });
   const [editando, setEditando] = useState<ReglaDto | 'nueva' | null>(null);
+  const { esAdmin } = useSesion();
 
   const recargar = reglas.recargar;
   const guardar = useAccion(
@@ -83,7 +85,7 @@ export function Reglas() {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-2xl font-bold">Reglas automáticas</h2>
-        {editando === null && (
+        {esAdmin && editando === null && (
           <button
             type="button"
             onClick={() => setEditando('nueva')}
@@ -97,6 +99,7 @@ export function Reglas() {
       <p className="text-sm text-texto-suave">
         Las reglas solo actúan en zonas en modo automático. Si varias se cumplen a la vez, gana la
         de menor número de prioridad.
+        {!esAdmin && ' Solo el administrador puede crear o cambiar reglas.'}
       </p>
       <AvisoConexion
         error={reglas.error}
@@ -152,29 +155,31 @@ export function Reglas() {
                   texto={regla.activa ? 'Activa' : 'Desactivada'}
                 />
               </div>
-              <div className="flex flex-wrap gap-2">
-                <BotonRegla
-                  icono={Power}
-                  texto={regla.activa ? 'Desactivar' : 'Activar'}
-                  etiqueta={`${regla.activa ? 'Desactivar' : 'Activar'} ${regla.nombre}`}
-                  deshabilitado={cambiarRegla.enCurso !== null}
-                  onClick={() => void cambiarRegla.ejecutar(regla, 'alternar')}
-                />
-                <BotonRegla
-                  icono={Pencil}
-                  texto="Editar"
-                  etiqueta={`Editar ${regla.nombre}`}
-                  deshabilitado={ocupada}
-                  onClick={() => setEditando(regla)}
-                />
-                <BotonRegla
-                  icono={Trash2}
-                  texto="Eliminar"
-                  etiqueta={`Eliminar ${regla.nombre}`}
-                  deshabilitado={cambiarRegla.enCurso !== null}
-                  onClick={() => alEliminar(regla)}
-                />
-              </div>
+              {esAdmin && (
+                <div className="flex flex-wrap gap-2">
+                  <BotonRegla
+                    icono={Power}
+                    texto={regla.activa ? 'Desactivar' : 'Activar'}
+                    etiqueta={`${regla.activa ? 'Desactivar' : 'Activar'} ${regla.nombre}`}
+                    deshabilitado={cambiarRegla.enCurso !== null}
+                    onClick={() => void cambiarRegla.ejecutar(regla, 'alternar')}
+                  />
+                  <BotonRegla
+                    icono={Pencil}
+                    texto="Editar"
+                    etiqueta={`Editar ${regla.nombre}`}
+                    deshabilitado={ocupada}
+                    onClick={() => setEditando(regla)}
+                  />
+                  <BotonRegla
+                    icono={Trash2}
+                    texto="Eliminar"
+                    etiqueta={`Eliminar ${regla.nombre}`}
+                    deshabilitado={cambiarRegla.enCurso !== null}
+                    onClick={() => alEliminar(regla)}
+                  />
+                </div>
+              )}
             </li>
           );
         })}

@@ -1,8 +1,10 @@
 // Datos iniciales (PROPUESTA): 1 salón, 2 zonas, 1 luz + 1 servo + 1 sensor PIR por zona y 2 reglas.
 // Ajustar cuando se confirme la cantidad real de luces, zonas y sensores.
+import { randomInt } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { leerEntorno } from '../src/config/entorno';
 import { crearBaseDatos, type BaseDatos } from '../src/db/cliente';
+import { asegurarAdmin } from '../src/servicios/autenticacion';
 
 const ZONAS = [
   { id: 'zona-frente', nombre: 'Frente', orden: 1 },
@@ -73,16 +75,39 @@ export async function sembrar(bd: BaseDatos): Promise<boolean> {
   return true;
 }
 
+/** Contraseña aleatoria legible (letras y números) para el admin cuando no hay ADMIN_CONTRASENA. */
+function contrasenaAleatoria(): string {
+  const caracteres = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const texto = Array.from({ length: 12 }, () => caracteres[randomInt(caracteres.length)]).join('');
+  return `${texto}7`; // garantiza al menos un número
+}
+
 async function principal(): Promise<void> {
   try {
     process.loadEnvFile('.env');
   } catch {
-    // Sin .env se usa la base por defecto.
+    // Sin .env se usan los valores por defecto.
   }
-  const bd = crearBaseDatos(leerEntorno().DATABASE_URL);
+  const entorno = leerEntorno();
+  const bd = crearBaseDatos(entorno.DATABASE_URL);
   try {
     const creado = await sembrar(bd);
-    console.log(creado ? 'Datos iniciales cargados.' : 'La base ya tenía datos; no se modificó.');
+    console.log(
+      creado ? 'Datos iniciales cargados.' : 'La base ya tenía datos del salón; no se modificaron.',
+    );
+
+    const contrasena = entorno.ADMIN_CONTRASENA ?? contrasenaAleatoria();
+    const adminCreado = await asegurarAdmin(bd, {
+      correo: entorno.ADMIN_CORREO,
+      nombre: entorno.ADMIN_NOMBRE,
+      contrasena,
+    });
+    if (adminCreado) {
+      console.log(`Administrador creado: ${entorno.ADMIN_CORREO}`);
+      if (!entorno.ADMIN_CONTRASENA) {
+        console.log(`Contraseña generada (guárdala, no se vuelve a mostrar): ${contrasena}`);
+      }
+    }
   } finally {
     await bd.$disconnect();
   }

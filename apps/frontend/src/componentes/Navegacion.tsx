@@ -5,6 +5,7 @@ import {
   ListChecks,
   Radar,
   SlidersHorizontal,
+  Users,
   type LucideIcon,
 } from 'lucide-react';
 import { NavLink } from 'react-router';
@@ -26,8 +27,20 @@ const ENLACES: Enlace[] = [
 const ENLACE_SIMULADOR: Enlace = { ruta: '/simulador', texto: 'Simulador', icono: FlaskConical };
 
 /** Barra inferior en el celular y lateral en pantallas grandes. */
-export function Navegacion({ mostrarSimulador }: { mostrarSimulador: boolean }) {
-  const enlaces = mostrarSimulador ? [...ENLACES, ENLACE_SIMULADOR] : ENLACES;
+const ENLACE_USUARIOS: Enlace = { ruta: '/usuarios', texto: 'Usuarios', icono: Users };
+
+export function Navegacion({
+  mostrarSimulador,
+  mostrarUsuarios,
+}: {
+  mostrarSimulador: boolean;
+  mostrarUsuarios: boolean;
+}) {
+  const enlaces = [
+    ...ENLACES,
+    ...(mostrarUsuarios ? [ENLACE_USUARIOS] : []),
+    ...(mostrarSimulador ? [ENLACE_SIMULADOR] : []),
+  ];
   return (
     <nav
       aria-label="Principal"

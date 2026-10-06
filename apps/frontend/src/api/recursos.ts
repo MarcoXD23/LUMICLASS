@@ -1,5 +1,9 @@
 import type {
   AccionLuz,
+  CambioUsuario,
+  CorreoSimuladoDto,
+  DatosLogin,
+  DatosRegistro,
   EstadisticasDto,
   EstadoSalonDto,
   EstadoSimuladorDto,
@@ -16,6 +20,7 @@ import type {
   RespuestaServo,
   SensorDto,
   SimPresencia,
+  UsuarioDto,
   ZonaDto,
 } from '@lumiclass/compartido';
 import { pedir } from './cliente';
@@ -89,4 +94,37 @@ export const api = {
       }),
     reiniciar: () => pedir<EstadoSimuladorDto>('/sim/reiniciar', { metodo: 'POST' }),
   },
+
+  auth: {
+    sesion: (senal?: AbortSignal) => pedir<UsuarioSesion>('/auth/sesion', { senal }),
+    login: (datos: DatosLogin) =>
+      pedir<UsuarioDto>('/auth/login', { metodo: 'POST', cuerpo: datos }),
+    registro: (datos: DatosRegistro) =>
+      pedir<UsuarioDto>('/auth/registro', { metodo: 'POST', cuerpo: datos }),
+    logout: () => pedir<void>('/auth/logout', { metodo: 'POST', cuerpo: {} }),
+    recuperar: (correo: string) =>
+      pedir<{ mensaje: string }>('/auth/recuperar', { metodo: 'POST', cuerpo: { correo } }),
+    restablecer: (token: string, contrasena: string) =>
+      pedir<{ mensaje: string }>('/auth/restablecer', {
+        metodo: 'POST',
+        cuerpo: { token, contrasena },
+      }),
+    correosSimulados: (senal?: AbortSignal) =>
+      pedir<CorreoSimuladoDto[]>('/auth/correos-simulados', { senal }),
+  },
+
+  usuarios: {
+    listar: (incluirInactivos: boolean, senal?: AbortSignal) =>
+      pedir<UsuarioDto[]>(`/usuarios${incluirInactivos ? '?incluirInactivos=true' : ''}`, {
+        senal,
+      }),
+    cambiar: (id: string, cambios: CambioUsuario) =>
+      pedir<UsuarioDto>(`/usuarios/${encodeURIComponent(id)}`, {
+        metodo: 'PATCH',
+        cuerpo: cambios,
+      }),
+  },
 };
+
+/** Lo que devuelve GET /auth/sesion. */
+export type UsuarioSesion = Pick<UsuarioDto, 'id' | 'nombre' | 'correo' | 'rol'>;

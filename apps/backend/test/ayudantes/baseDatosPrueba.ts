@@ -1,9 +1,12 @@
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import type { InjectOptions } from 'fastify';
+import { NOMBRE_COOKIE_SESION } from '../../src/api/cookies';
 import { construirApp } from '../../src/app';
 import { leerEntorno } from '../../src/config/entorno';
 import { crearBaseDatos } from '../../src/db/cliente';
+import { generarToken, hashDeToken } from '../../src/dominio/tokens';
 import type { DriverHardware } from '../../src/drivers/driver';
 import { DriverEnMemoria } from '../../src/drivers/driverEnMemoria';
 import { sembrar } from '../../prisma/seed';
@@ -30,7 +33,13 @@ function sentenciasDeMigracion(): string[] {
  * - El reloj es manual: el tiempo solo avanza con `avanzar(ms)`.
  */
 export async function crearAppDePrueba<D extends DriverHardware = DriverEnMemoria>(
-  opciones: { driver?: D; sinDatos?: boolean; entorno?: Record<string, string> } = {},
+  opciones: {
+    driver?: D;
+    sinDatos?: boolean;
+    entorno?: Record<string, string>;
+    /** true: inject() va sin cookie (para probar la autenticación). */
+    sinSesion?: boolean;
+  } = {},
 ) {
   const carpeta = mkdtempSync(join(tmpdir(), 'lumiclass-prueba-'));
   const url = `file:${join(carpeta, 'prueba.db')}`;
@@ -52,6 +61,44 @@ export async function crearAppDePrueba<D extends DriverHardware = DriverEnMemori
   await app.ready();
   const { servicios } = app;
 
+  /**
+   * Crea una cuenta (si hace falta) con una sesión abierta y devuelve el encabezado "cookie".
+   * Inserta la sesión directamente: no genera eventos ni calcula hashes (más rápido).
+   */
+  const iniciarSesionComo = async (rol: 'admin' | 'usuario', correo: string) => {
+    const usuario = await bd.usuario.upsert({
+      where: { correo },
+      create: {
+        correo,
+        nombre: rol === 'admin' ? 'Admin Prueba' : 'Usuario Prueba',
+        rol,
+        hashContrasena: 'sin-contrasena',
+      },
+      update: {},
+    });
+    const token = generarToken();
+    await bd.sesion.create({
+      data: {
+        usuarioId: usuario.id,
+        tokenHash: hashDeToken(token),
+        expiraEn: new Date(reloj.ahora().getTime() + 8 * 60 * 60 * 1000),
+      },
+    });
+    return `${NOMBRE_COOKIE_SESION}=${token}`;
+  };
+  const cookieAdmin = await iniciarSesionComo('admin', 'admin@prueba.local');
+
+  // Por defecto, cada inject() va con la sesión del admin (las pruebas de auth la quitan).
+  if (!opciones.sinSesion) {
+    const injectOriginal = app.inject.bind(app);
+    const injectConSesion = (opcionesInject: InjectOptions) =>
+      injectOriginal({
+        ...opcionesInject,
+        headers: { cookie: cookieAdmin, ...opcionesInject.headers },
+      });
+    app.inject = injectConSesion as typeof app.inject;
+  }
+
   /** Espera a que presencia y motor terminen de reaccionar. */
   const esperarEfectos = async () => {
     await servicios.presencia.esperar();
@@ -64,6 +111,8 @@ export async function crearAppDePrueba<D extends DriverHardware = DriverEnMemori
     driver,
     reloj,
     servicios,
+    cookieAdmin,
+    iniciarSesionComo,
     esperarEfectos,
     avanzar: (ms: number) => reloj.avanzar(ms, esperarEfectos),
     async cerrar() {

@@ -1,6 +1,13 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { instalarApiFalsa, reglasEjemplo, zonaEjemplo } from '../pruebas/apiFalsa';
+import { ProveedorSesion } from '../hooks/useSesion';
+import {
+  instalarApiFalsa,
+  reglasEjemplo,
+  sesionAdmin,
+  sesionUsuario,
+  zonaEjemplo,
+} from '../pruebas/apiFalsa';
 import { Reglas } from './Reglas';
 
 afterEach(() => {
@@ -9,14 +16,22 @@ afterEach(() => {
 });
 
 const apiBase = () => ({
+  'GET /auth/sesion': { cuerpo: sesionAdmin },
   'GET /reglas': { cuerpo: reglasEjemplo },
   'GET /zonas': { cuerpo: [zonaEjemplo(), zonaEjemplo({ id: 'zona-fondo', nombre: 'Fondo' })] },
 });
 
+const renderizar = () =>
+  render(
+    <ProveedorSesion>
+      <Reglas />
+    </ProveedorSesion>,
+  );
+
 describe('Reglas', () => {
   it('explica cada regla en una frase', async () => {
     instalarApiFalsa(apiBase());
-    render(<Reglas />);
+    renderizar();
     expect(
       await screen.findByText('Si cualquier zona queda vacía durante 5 min, apagar las luces.'),
     ).toBeInTheDocument();
@@ -27,7 +42,7 @@ describe('Reglas', () => {
 
   it('valida el formulario antes de enviar', async () => {
     const { llamadas } = instalarApiFalsa(apiBase());
-    render(<Reglas />);
+    renderizar();
     fireEvent.click(await screen.findByRole('button', { name: /Nueva regla/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(/Nombre/);
@@ -39,7 +54,7 @@ describe('Reglas', () => {
       ...apiBase(),
       'POST /reglas': (cuerpo) => ({ estado: 201, cuerpo: { ...(cuerpo as object), id: 'nueva' } }),
     });
-    render(<Reglas />);
+    renderizar();
     fireEvent.click(await screen.findByRole('button', { name: /Nueva regla/ }));
     const formulario = screen.getByRole('form', { name: 'Nueva regla' });
     const campo = (nombre: RegExp) => within(formulario).getByLabelText(nombre);
@@ -69,7 +84,7 @@ describe('Reglas', () => {
         },
       }),
     });
-    render(<Reglas />);
+    renderizar();
     fireEvent.click(await screen.findByRole('button', { name: /Nueva regla/ }));
     fireEvent.change(screen.getByLabelText(/^Nombre/), { target: { value: 'X12' } });
     fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
@@ -82,7 +97,7 @@ describe('Reglas', () => {
       ...apiBase(),
       'PUT /reglas/regla-apagar-vacio': (cuerpo) => ({ cuerpo }),
     });
-    render(<Reglas />);
+    renderizar();
     fireEvent.click(
       await screen.findByRole('button', { name: 'Desactivar Apagar cuando el salón queda vacío' }),
     );
@@ -102,7 +117,7 @@ describe('Reglas', () => {
       .spyOn(window, 'confirm')
       .mockReturnValueOnce(false)
       .mockReturnValueOnce(true);
-    render(<Reglas />);
+    renderizar();
     const boton = await screen.findByRole('button', {
       name: 'Eliminar Apagar cuando el salón queda vacío',
     });
@@ -111,5 +126,16 @@ describe('Reglas', () => {
     fireEvent.click(boton);
     await waitFor(() => expect(llamadas.some((l) => l.metodo === 'DELETE')).toBe(true));
     expect(confirmar).toHaveBeenCalledTimes(2);
+  });
+
+  it('un usuario normal ve las reglas pero no los botones para cambiarlas', async () => {
+    instalarApiFalsa({ ...apiBase(), 'GET /auth/sesion': { cuerpo: sesionUsuario } });
+    renderizar();
+    expect(
+      await screen.findByText(/Solo el administrador puede crear o cambiar reglas/),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Encender al detectar presencia')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Nueva regla/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Eliminar / })).not.toBeInTheDocument();
   });
 });

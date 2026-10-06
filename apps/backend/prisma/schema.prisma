@@ -122,3 +122,62 @@ model SolicitudProcesada {
   respuesta    String
   fecha        DateTime @default(now())
 }
+
+/// Cuenta de acceso. Nunca se borra: al desactivarla se marca inactivoDesde.
+model Usuario {
+  id              String              @id @default(cuid())
+  nombre          String
+  /// Siempre en minúsculas.
+  correo          String              @unique
+  /// "scrypt$N$r$p$sal$hash" (nunca la contraseña en texto plano).
+  hashContrasena  String
+  /// "admin" | "usuario"
+  rol             String              @default("usuario")
+  creadoEn        DateTime            @default(now())
+  actualizadoEn   DateTime            @updatedAt
+  inactivoDesde   DateTime?
+  inactivadoPorId String?
+  sesiones        Sesion[]
+  tokens          TokenRecuperacion[]
+}
+
+/// Sesión iniciada. Al cerrar o vencer queda activa = false (no se borra).
+model Sesion {
+  id        String    @id @default(cuid())
+  usuarioId String
+  usuario   Usuario   @relation(fields: [usuarioId], references: [id])
+  /// SHA-256 del token que viaja en la cookie.
+  tokenHash String    @unique
+  creadaEn  DateTime  @default(now())
+  expiraEn  DateTime
+  activa    Boolean   @default(true)
+  cerradaEn DateTime?
+  ip        String?
+
+  @@index([usuarioId])
+}
+
+/// Token de recuperación de contraseña, de un solo uso.
+model TokenRecuperacion {
+  id        String    @id @default(cuid())
+  usuarioId String
+  usuario   Usuario   @relation(fields: [usuarioId], references: [id])
+  tokenHash String    @unique
+  creadoEn  DateTime  @default(now())
+  expiraEn  DateTime
+  /// "pendiente" | "usado" | "vencido"
+  estado    String    @default("pendiente")
+  usadoEn   DateTime?
+
+  @@index([usuarioId])
+}
+
+/// Correos enviados en modo simulado (mientras no haya SMTP real).
+model CorreoSimulado {
+  id       Int      @id @default(autoincrement())
+  para     String
+  asunto   String
+  cuerpo   String
+  enlace   String?
+  creadoEn DateTime @default(now())
+}

@@ -4,17 +4,22 @@ import type { BaseDatos } from './db/cliente';
 import { relojReal, type Reloj } from './dominio/reloj';
 import type { DriverHardware } from './drivers/driver';
 import { DriverSimulado } from './drivers/driverSimulado';
+import { exigirSesion } from './api/autorizacion';
 import { registrarManejoErrores } from './api/manejoErrores';
+import { rutasAuth } from './api/rutasAuth';
 import { rutasEstadisticas } from './api/rutasEstadisticas';
 import { rutasEventos } from './api/rutasEventos';
 import { rutasLuces } from './api/rutasLuces';
 import { rutasReglas } from './api/rutasReglas';
-import { rutasSalon } from './api/rutasSalon';
+import { rutasSalon, rutasSalud } from './api/rutasSalon';
 import { rutasSensores } from './api/rutasSensores';
 import { rutasSimulador } from './api/rutasSimulador';
 import { rutasTiempoReal } from './api/rutasTiempoReal';
+import { rutasUsuarios } from './api/rutasUsuarios';
 import { rutasZonas } from './api/rutasZonas';
 import type { EventoDto } from '@lumiclass/compartido';
+import { ServicioAutenticacion } from './servicios/autenticacion';
+import { ServicioCorreo } from './servicios/correo';
 import { Difusor } from './servicios/difusor';
 import { ServicioEstadisticas } from './servicios/estadisticas';
 import { ServicioEventos } from './servicios/eventos';
@@ -27,6 +32,7 @@ import { ServicioReglas } from './servicios/reglas';
 import { ServicioSalon } from './servicios/salon';
 import { ServicioSensores } from './servicios/sensores';
 import { ServicioSimulador } from './servicios/simulador';
+import { ServicioUsuarios } from './servicios/usuarios';
 import { ServicioZonas } from './servicios/zonas';
 
 export interface DependenciasApp {
@@ -49,6 +55,14 @@ export function crearServicios({ entorno, bd, driver, reloj = relojReal }: Depen
   const presencia = new ServicioPresencia(bd, eventos);
   const motor = new MotorReglas(bd, luces, reglas, reloj, entorno.INTERVALO_REGLAS_MS);
   presencia.alProcesarZona = (zonaId) => void motor.evaluarZona(zonaId);
+  const correo = new ServicioCorreo(bd);
+  const auth = new ServicioAutenticacion(
+    bd,
+    eventos,
+    correo,
+    reloj,
+    entorno.DURACION_SESION_HORAS * 60 * 60 * 1000,
+  );
 
   return {
     entorno,
@@ -56,6 +70,9 @@ export function crearServicios({ entorno, bd, driver, reloj = relojReal }: Depen
     driver,
     difusor,
     eventos,
+    correo,
+    auth,
+    usuarios: new ServicioUsuarios(bd, eventos, reloj),
     luces,
     zonas,
     reglas,
@@ -81,6 +98,7 @@ export function construirApp(dependencias: DependenciasApp) {
   let cerrarTiempoReal: () => void = () => undefined;
 
   registrarManejoErrores(app);
+  app.decorateRequest('usuario', null);
 
   app.addHook('onReady', async () => {
     await servicios.luces.liberarActuadoresBloqueados();
@@ -107,18 +125,27 @@ export function construirApp(dependencias: DependenciasApp) {
 
   app.register(
     async (api) => {
-      rutasSalon(api, servicios);
-      rutasZonas(api, servicios);
-      rutasLuces(api, servicios);
-      rutasSensores(api, servicios);
-      rutasReglas(api, servicios);
-      rutasEventos(api, servicios);
-      rutasEstadisticas(api, servicios.estadisticas);
-      cerrarTiempoReal = rutasTiempoReal(api, servicios.difusor, {
-        maxConexiones: dependencias.entorno.MAX_CONEXIONES_SSE,
-        latidoMs: dependencias.entorno.LATIDO_SSE_MS,
+      // Públicas: salud y autenticación.
+      rutasSalud(api, servicios);
+      rutasAuth(api, servicios.auth, servicios.correo, dependencias.entorno);
+
+      // Todo lo demás exige sesión iniciada.
+      await api.register(async (protegidas) => {
+        exigirSesion(protegidas, servicios.auth);
+        rutasSalon(protegidas, servicios);
+        rutasZonas(protegidas, servicios);
+        rutasLuces(protegidas, servicios);
+        rutasSensores(protegidas, servicios);
+        rutasReglas(protegidas, servicios);
+        rutasEventos(protegidas, servicios);
+        rutasEstadisticas(protegidas, servicios.estadisticas);
+        rutasUsuarios(protegidas, servicios.usuarios);
+        cerrarTiempoReal = rutasTiempoReal(protegidas, servicios.difusor, {
+          maxConexiones: dependencias.entorno.MAX_CONEXIONES_SSE,
+          latidoMs: dependencias.entorno.LATIDO_SSE_MS,
+        });
+        if (servicios.simulador) rutasSimulador(protegidas, servicios.simulador);
       });
-      if (servicios.simulador) rutasSimulador(api, servicios.simulador);
     },
     { prefix: '/api/v1' },
   );

@@ -13,12 +13,17 @@ interface MensajeSse {
 }
 
 /** Abre una conexión SSE real y va acumulando los mensajes recibidos. */
-async function conectar(puerto: number) {
+async function conectar(puerto: number, cookie: string | null = prueba.cookieAdmin) {
   const mensajes: MensajeSse[] = [];
   let texto = '';
   const respuesta = await new Promise<IncomingMessage>((resolver, rechazar) => {
     const pedido = request(
-      { host: '127.0.0.1', port: puerto, path: '/api/v1/tiempo-real' },
+      {
+        host: '127.0.0.1',
+        port: puerto,
+        path: '/api/v1/tiempo-real',
+        headers: cookie ? { cookie } : {},
+      },
       resolver,
     );
     pedido.on('error', rechazar);
@@ -110,6 +115,13 @@ describe('GET /api/v1/tiempo-real (SSE)', () => {
     const segunda = await conectar(puerto);
     expect(segunda.respuesta.statusCode).toBe(200);
     segunda.respuesta.destroy();
+  });
+
+  it('rechaza con 401 a quien no inició sesión', async () => {
+    const puerto = await iniciarServidor();
+    const { respuesta } = await conectar(puerto, null);
+    expect(respuesta.statusCode).toBe(401);
+    respuesta.destroy();
   });
 
   it('el servidor se apaga aunque haya conexiones abiertas', async () => {
