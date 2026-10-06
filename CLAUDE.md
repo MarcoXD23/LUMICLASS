@@ -24,6 +24,7 @@ Debe distinguirse a simple vista: ocupado/vacío, luces on/off, automático/manu
 
 ## Funciones
 
+- Cuentas: registro libre; cada cuenta tiene varios salones y solo ve y controla lo suyo (un solo rol). Lo de otra cuenta responde 404.
 - Dashboard: estado del salón, luces, modo, sensores, actuadores, personas detectadas (solo si el hardware lo permite), última actualización, alertas.
 - Control de luces individual o por zona: encender, apagar, cambiar modo.
 - Sensores: estado, última lectura, presencia, datos relevantes.
@@ -49,4 +50,4 @@ Debe distinguirse a simple vista: ocupado/vacío, luces on/off, automático/manu
 9. Pruebas completas y corrección de errores.
 10. Preparación de la presentación: README, guía de demo, guion de pruebas.
 
-Estado actual: Fase 5 completada en Laravel 13 (puerto 8001, cookie lumiclass_session; API /api/v1, simulador /api/v1/sim y motor de reglas, con pruebas). El proyecto Node anterior está en el commit d4e4b20. Pendiente: respuestas de la Fase 1 y capturas en `diseno/` (necesarias para la Fase 6). Siguiente: Fase 6.
+Estado actual: Fase 5 completada en Laravel 13 (puerto 8001, cookie lumiclass_session; API /api/v1, simulador y motor de reglas) más cuentas multiusuario con Sanctum (rutas por salón: /api/v1/salones/{id}/...), con pruebas. El proyecto Node anterior está en el commit d4e4b20. Pendiente: respuestas de la Fase 1 y capturas en `diseno/` (necesarias para la Fase 6). Siguiente: Fase 6.

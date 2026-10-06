@@ -15,7 +15,10 @@ class LuzFactory extends Factory
     {
         return [
             'zona_id' => Zona::factory(),
-            'actuador_id' => Actuador::factory(),
+            // El servo se crea en el mismo salón que la zona de la luz.
+            'actuador_id' => fn (array $atributos) => Actuador::factory()->create([
+                'salon_id' => Zona::query()->find($atributos['zona_id'])?->salon_id,
+            ])->id,
             'nombre' => 'Luz '.fake()->unique()->numberBetween(1, 999),
             'estado_deseado' => EstadoLuz::Apagada,
             'estado_real' => EstadoLuz::Desconocida,

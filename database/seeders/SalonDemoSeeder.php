@@ -2,63 +2,30 @@
 
 namespace Database\Seeders;
 
-use App\Models\Actuador;
-use App\Models\Regla;
-use App\Models\Salon;
+use App\Models\User;
+use App\Servicios\CreadorSalon;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 /**
- * Salón de ejemplo. Cantidades PROPUESTA: cambiar aquí cuando se confirmen
- * las luces, zonas y sensores reales (preguntas de la Fase 1).
+ * Cuenta de demostración con su salón de ejemplo (cantidades PROPUESTA).
+ * Solo para desarrollo y presentación: cambia la contraseña si el sistema se publica.
  */
 class SalonDemoSeeder extends Seeder
 {
-    private const ZONAS = [
-        ['nombre' => 'Zona frontal (pizarra)', 'luces' => ['Luz frontal izquierda', 'Luz frontal derecha']],
-        ['nombre' => 'Zona posterior', 'luces' => ['Luz posterior izquierda', 'Luz posterior derecha']],
-    ];
+    public const CORREO = 'demo@lumiclass.test';
 
-    public function run(): void
+    public const CONTRASENA = 'demo12345';
+
+    public function run(CreadorSalon $creador): void
     {
-        // Se puede ejecutar varias veces sin duplicar el salón.
-        if (Salon::query()->exists()) {
-            $this->command?->info('Ya existe un salón; no se crean datos de ejemplo.');
+        // Se puede ejecutar varias veces sin duplicar la cuenta.
+        if (User::query()->where('email', self::CORREO)->exists()) {
+            $this->command?->info('La cuenta de demostración ya existe; no se crean datos de ejemplo.');
 
             return;
         }
 
-        DB::transaction(function () {
-            $salon = Salon::create(['nombre' => 'Salón 101']);
-            $servo = 1;
-            // En la simulación se sabe que las luces empiezan apagadas; con hardware real no.
-            $estadoReal = config('lumiclass.driver') === 'simulado' ? 'apagada' : 'desconocida';
-
-            foreach (self::ZONAS as $indice => $datosZona) {
-                $zona = $salon->zonas()->create(['nombre' => $datosZona['nombre'], 'modo' => 'automatico']);
-
-                foreach ($datosZona['luces'] as $nombreLuz) {
-                    $actuador = Actuador::create(['nombre' => 'Servo '.$servo++]);
-                    $zona->luces()->create(['nombre' => $nombreLuz, 'actuador_id' => $actuador->id, 'estado_real' => $estadoReal]);
-                }
-
-                $zona->sensores()->create(['nombre' => 'Sensor PIR '.($indice + 1), 'tipo' => 'pir']);
-            }
-
-            Regla::create([
-                'nombre' => 'Encender al detectar presencia',
-                'prioridad' => 10,
-                'condicion' => ['presencia' => 'ocupado'],
-                'accion' => ['accion' => 'encender'],
-            ]);
-
-            // La espera evita apagar por lecturas falsas del PIR.
-            Regla::create([
-                'nombre' => 'Apagar tras 5 minutos sin presencia',
-                'prioridad' => 20,
-                'condicion' => ['presencia' => 'vacio', 'duracion_segundos' => 300],
-                'accion' => ['accion' => 'apagar'],
-            ]);
-        });
+        $usuario = User::create(['name' => 'Cuenta demo', 'email' => self::CORREO, 'password' => self::CONTRASENA]);
+        $creador->crearEjemplo($usuario);
     }
 }

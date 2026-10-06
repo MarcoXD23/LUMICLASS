@@ -5,17 +5,17 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\FiltrarEventosRequest;
 use App\Http\Resources\EventoResource;
-use App\Models\Evento;
+use App\Models\Salon;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class EventoController extends Controller
 {
     /** Historial, del más reciente al más antiguo. */
-    public function index(FiltrarEventosRequest $request): AnonymousResourceCollection
+    public function index(FiltrarEventosRequest $request, Salon $salon): AnonymousResourceCollection
     {
         $filtros = $request->validated();
 
-        $eventos = Evento::query()
+        $eventos = $salon->eventos()
             ->when($filtros['tipo'] ?? null, fn ($q, $valor) => $q->where('tipo', $valor))
             ->when($filtros['origen'] ?? null, fn ($q, $valor) => $q->where('origen', $valor))
             ->when($filtros['severidad'] ?? null, fn ($q, $valor) => $q->where('severidad', $valor))

@@ -29,9 +29,17 @@ php artisan serve --port=8001
 ```
 
 - Aplicación: http://localhost:8001
-- API: http://localhost:8001/api/v1/salud y http://localhost:8001/api/v1/salon/estado
+- API: http://localhost:8001/api/v1/salud
 
-`--seed` crea un salón de ejemplo (2 zonas, 4 luces con su servo, 2 sensores PIR y 2 reglas). Son cantidades **PROPUESTA**; se cambian en `database/seeders/SalonDemoSeeder.php`. Los endpoints y protecciones están en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md#5-endpoints-apiv1-confirmado-fase-4).
+**Cuentas:** cada persona se registra y solo ve y controla **sus** salones (puede tener varios). `--seed` crea una cuenta de demostración:
+
+| Correo                | Contraseña  |
+| --------------------- | ----------- |
+| `demo@lumiclass.test` | `demo12345` |
+
+Es solo para desarrollo y presentación: cámbiala si el sistema se publica. Cada cuenta nueva recibe un salón de ejemplo (2 zonas, 4 luces con su servo, 2 sensores PIR y 2 reglas; cantidades **PROPUESTA**). Los endpoints y protecciones están en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md#5-endpoints-apiv1-confirmado).
+
+Si ya tenías una base de una versión anterior, recréala con `php artisan migrate:fresh --seed` (borra los datos locales).
 
 Se usa el puerto **8001** y la cookie de sesión **`lumiclass_session`** para que LUMICLASS pueda correr al mismo tiempo que otro proyecto Laravel (que normalmente usa el 8000 y la cookie `laravel_session`) sin que se mezclen las sesiones.
 
@@ -57,22 +65,30 @@ Con el servidor encendido (`php artisan serve --port=8001`), en otra consola:
 $api = "http://localhost:8001/api/v1"
 $json = @{ "Content-Type" = "application/json"; "Accept" = "application/json" }
 
+# 0. Iniciar sesión con la cuenta demo y usar su primer salón
+$login = Invoke-RestMethod -Method Post "$api/auth/token" -Headers $json -Body '{"email": "demo@lumiclass.test", "password": "demo12345", "nombre_dispositivo": "PowerShell"}'
+$json["Authorization"] = "Bearer $($login.token)"
+$salon = (Invoke-RestMethod "$api/salones" -Headers $json).data[0].id
+
 # 1. Escenario limpio: todo activo y luces apagadas
-Invoke-RestMethod -Method Post "$api/sim/reiniciar" -Headers $json
+Invoke-RestMethod -Method Post "$api/salones/$salon/sim/reiniciar" -Headers $json
 
 # 2. Alguien entra al salón: la regla enciende las luces
-Invoke-RestMethod -Method Post "$api/sim/presencia" -Headers $json -Body '{"presencia": true}'
-(Invoke-RestMethod "$api/salon/estado").data.luces
+Invoke-RestMethod -Method Post "$api/salones/$salon/sim/presencia" -Headers $json -Body '{"presencia": true}'
+(Invoke-RestMethod "$api/salones/$salon/estado" -Headers $json).data.luces
 
 # 3. El salón queda vacío: se apagan tras la espera de la regla (300 s)
-Invoke-RestMethod -Method Post "$api/sim/presencia" -Headers $json -Body '{"presencia": false}'
+Invoke-RestMethod -Method Post "$api/salones/$salon/sim/presencia" -Headers $json -Body '{"presencia": false}'
 
 # 4. Simular fallas: servo que no responde y sensor dañado
 Invoke-RestMethod -Method Patch "$api/sim/actuadores/1" -Headers $json -Body '{"respuesta": "sin_respuesta"}'
 Invoke-RestMethod -Method Patch "$api/sim/sensores/1" -Headers $json -Body '{"conexion": "falla"}'
 
-# 5. Ver el historial
-(Invoke-RestMethod "$api/eventos").data | Format-Table fecha, tipo, origen, mensaje
+# 5. Ver el historial del salón
+(Invoke-RestMethod "$api/salones/$salon/eventos" -Headers $json).data | Format-Table fecha, tipo, origen, mensaje
+
+# 6. Cerrar sesión (revoca el token)
+Invoke-RestMethod -Method Post "$api/auth/logout" -Headers $json
 ```
 
 Para la demo conviene acortar las esperas en `.env`: `LUMICLASS_FACTOR_TIEMPO_REGLAS=0.1` hace que los 300 s pasen a 30 s. El sistema avanza solo mientras se consulte `/salon/estado` (o con `php artisan schedule:work`).
@@ -96,4 +112,4 @@ Las reglas de trabajo están en [CLAUDE.md](CLAUDE.md).
 
 LUMICLASS está construido con [Laravel](https://laravel.com), un framework web de PHP. Documentación oficial: https://laravel.com/docs. Laravel es software de código abierto con licencia [MIT](https://opensource.org/licenses/MIT).
 
-**Estado:** Fase 5 completada (simulador de sensores y servos, motor de reglas, con pruebas). El proyecto anterior en Node.js quedó guardado en el commit `d4e4b20` de la rama `feature/fase-4-backend-api`.
+**Estado:** Fase 5 completada y cuentas multiusuario (registro, login, varios salones por cuenta, datos aislados), con pruebas. El proyecto anterior en Node.js quedó guardado en el commit `d4e4b20` de la rama `feature/fase-4-backend-api`.

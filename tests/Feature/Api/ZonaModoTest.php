@@ -12,6 +12,13 @@ class ZonaModoTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->iniciarSesion();
+    }
+
     public function test_cambiar_modo_registra_evento(): void
     {
         $zona = Zona::factory()->create();

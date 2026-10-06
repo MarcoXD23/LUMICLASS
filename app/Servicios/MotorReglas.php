@@ -80,7 +80,9 @@ class MotorReglas
     {
         $factor = (float) config('lumiclass.reglas.factor_tiempo');
 
+        // Solo reglas del mismo salón: las globales (sin zona) no cruzan a salones de otras cuentas.
         return Regla::query()
+            ->where('salon_id', $zona->salon_id)
             ->where('activa', true)
             ->where(fn ($q) => $q->whereNull('zona_id')->orWhere('zona_id', $zona->id))
             ->ordenadas()

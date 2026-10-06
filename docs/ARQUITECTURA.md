@@ -17,6 +17,7 @@
 | Backend + API | PHP 8.4 + Laravel 13                     | Decisión del equipo; migraciones, validación y pruebas incluidas.               |
 | Base de datos | SQLite (archivo `database/database.sqlite`) | Sin servidor que instalar en Windows. Migrable a MySQL cambiando `.env`.       |
 | Validación    | Form Requests de Laravel                 | Reglas por endpoint, mensajes en español (`lang/es/validation.php`).            |
+| Cuentas       | Laravel Sanctum                          | Navegador: cookie de sesión `lumiclass_session` + CSRF. Scripts y placa: token Bearer. |
 | Pruebas       | PHPUnit (`php artisan test`)             | Viene con Laravel; base en memoria, no toca los datos locales.                  |
 | Estilo        | Laravel Pint (`vendor/bin/pint`)         | Formato uniforme entre tres personas.                                           |
 | Frontend      | Blade + Vite (PROPUESTA, Fase 6)         | Se define con las capturas de `diseno/`.                                        |
@@ -26,7 +27,7 @@
 
 ## 2. Tiempo real (PROPUESTA, Fase 7)
 
-- **Qué:** consulta periódica (polling) cada 2–3 s a `/api/v1/salon/estado`; las órdenes van por REST.
+- **Qué:** consulta periódica (polling) cada 2–3 s a `/api/v1/salones/{id}/estado`; las órdenes van por REST.
   Esa misma consulta hace avanzar el tick (sección 6).
 - **Por qué:** `php artisan serve` en Windows atiende **una petición a la vez**; una conexión SSE abierta lo
   bloquearía. El polling es estable y fácil de presentar. Si se despliega con un servidor multi-proceso, se puede pasar a SSE.
@@ -58,41 +59,68 @@ LUMICLASS/
 └─ diseno/
 ```
 
-## 4. Entidades (CONFIRMADO, Fase 4)
+## 4. Entidades (CONFIRMADO)
+
+**Cuentas (CONFIRMADO):** LUMICLASS se ofrece a varias personas. Registro libre; cada cuenta tiene **varios
+salones** y puede hacer todo, pero **solo** sobre lo suyo. Un único rol (sin administrador).
 
 | Tabla                    | Campos clave                                                                                                   |
 | ------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| `salones`                | id, nombre. La ocupación se **calcula** a partir de los sensores.                                              |
+| `users`                  | id, name, email (único, en minúsculas), password (cifrada)                                                     |
+| `salones`                | id, user_id (dueño), nombre (único por cuenta). La ocupación se **calcula** a partir de los sensores.         |
 | `zonas`                  | id, salon_id, nombre, modo (`automatico` / `manual`)                                                           |
 | `luces`                  | id, zona_id, actuador_id (único), nombre, estado_deseado (`encendida`/`apagada`), estado_real (+ `desconocida`) |
 | `sensores`               | id, zona_id, nombre, tipo, conexion (`activo`/`inactivo`/`falla`), presencia (null = sin lectura), presencia_desde, conteo_personas?, ultima_lectura |
-| `actuadores` (servos)    | id, nombre, conexion, ocupado, orden_pendiente, orden_iniciada_en, ultimo_resultado (`ok` o el error)          |
-| `reglas`                 | id, zona_id? (null = todas), nombre, activa, prioridad (menor = primero), condicion (JSON), accion (JSON)      |
-| `eventos`                | id, tipo, origen (`usuario`/`regla`/`sistema`/`simulador`), severidad, entidad_tipo, entidad_id, mensaje, datos, created_at |
-| `solicitudes_procesadas` | id_solicitud (único), ruta, codigo_http, respuesta: evita ejecutar dos veces la misma orden                    |
+| `actuadores` (servos)    | id, salon_id, nombre, conexion, ocupado, orden_pendiente, orden_iniciada_en, ultimo_resultado (`ok` o el error) |
+| `reglas`                 | id, salon_id, zona_id? (null = todas las zonas de su salón), nombre, activa, prioridad (menor = primero), condicion (JSON), accion (JSON) |
+| `eventos`                | id, salon_id, tipo, origen (`usuario`/`regla`/`sistema`/`simulador`), severidad, entidad_tipo, entidad_id, mensaje, datos, created_at |
+| `solicitudes_procesadas` | user_id + id_solicitud (únicos juntos), ruta, codigo_http, respuesta: evita ejecutar dos veces la misma orden  |
+| `personal_access_tokens` | tokens de Sanctum para scripts y (Fase 8) la placa                                                             |
+
+- Borrar un salón borra en cascada sus zonas, luces, servos, sensores, reglas e historial. Borrar una cuenta borra sus salones.
 
 - `estado_deseado` y `estado_real` van separados: el servo puede fallar y, sin sensor de luz, el estado
   real es `desconocida`. La interfaz lo muestra como advertencia en lugar de un dato falso.
 - **Ocupación:** `ocupado` si algún sensor activo detecta presencia, `vacio` si todos los activos con lectura
   dicen que no, `desconocida` si ningún sensor activo tiene lectura (un sensor en falla **no** cuenta como vacío).
 - **eventos** es la única fuente del historial; de ahí salen historial, alertas y estadísticas.
-- **Usuario / login:** pendiente de confirmar. Si se confirma, se agrega con Laravel Sanctum.
 - Formato de regla (PROPUESTA): `condicion = {"presencia": "ocupado"|"vacio", "duracion_segundos"?: 0..86400}`,
   `accion = {"accion": "encender"|"apagar"}`.
 
-## 5. Endpoints `/api/v1` (CONFIRMADO, Fase 4)
+## 5. Endpoints `/api/v1` (CONFIRMADO)
 
-| Método            | Ruta                                              | Uso                                                       |
-| ----------------- | ------------------------------------------------- | --------------------------------------------------------- |
-| GET               | `/salud`                                          | Estado de API, base de datos y driver (503 si la BD falla) |
-| GET               | `/salon/estado`                                   | Todo el dashboard en una sola llamada                     |
-| GET               | `/zonas` · `/zonas/{id}` · `/luces` · `/luces/{id}` · `/sensores` · `/sensores/{id}` | Listas y detalle |
-| PATCH             | `/zonas/{id}/modo`                                | `{ "modo": "automatico" \| "manual" }`                    |
-| POST              | `/luces/{id}/comando` · `/zonas/{id}/comando`     | `{ "accion": "encender" \| "apagar", "id_solicitud": "<uuid>" }` → `resultado`: `completada` · `pendiente` (HTTP 202) · `fallida` · `sin_cambio` |
-| GET/POST/PUT/DELETE | `/reglas[/{id}]`                                | Gestión de reglas                                         |
-| GET               | `/eventos?tipo&origen&severidad&desde&hasta&por_pagina&page` | Historial paginado (más reciente primero)      |
-| GET               | `/estadisticas?rango`                             | PROPUESTA, Fase 7                                         |
-| *                 | `/sim/...`                                        | Simulador, ver sección 6 (solo con `LUMICLASS_DRIVER=simulado`; si no, 404) |
+**Públicos:**
+
+| Método | Ruta              | Uso                                                                                       |
+| ------ | ----------------- | ----------------------------------------------------------------------------------------- |
+| GET    | `/salud`          | Estado de API, base de datos y driver (503 si la BD falla)                                 |
+| POST   | `/auth/registro`  | `{ nombre, email, password, password_confirmation }` → crea la cuenta + salón de ejemplo e inicia sesión |
+| POST   | `/auth/login`     | `{ email, password }` → sesión del navegador (antes: `GET /sanctum/csrf-cookie`)          |
+| POST   | `/auth/token`     | `{ email, password, nombre_dispositivo? }` → token para scripts y placa                    |
+
+Los tres de `/auth` admiten 5 intentos por minuto (`429 demasiados_intentos`).
+
+**Con sesión o token** (sin ellos: `401 no_autenticado`):
+
+| Método              | Ruta                                              | Uso                                                       |
+| ------------------- | ------------------------------------------------- | --------------------------------------------------------- |
+| POST · GET          | `/auth/logout` · `/auth/yo`                       | Cerrar sesión (o revocar el token) · datos de la cuenta   |
+| GET · POST          | `/salones`                                        | Mis salones · crear `{ nombre, zonas?: 1..10, luces_por_zona?: 1..10 }` (máx. 20 por cuenta) |
+| GET · PATCH · DELETE | `/salones/{id}`                                  | Ver · renombrar `{ nombre }` · borrar con todo lo suyo    |
+| GET                 | `/salones/{id}/estado`                            | Todo el dashboard de un salón en una sola llamada         |
+| GET                 | `/salones/{id}/zonas` · `/luces` · `/sensores` · `/reglas` | Listas del salón                                 |
+| GET                 | `/salones/{id}/eventos?tipo&origen&severidad&desde&hasta&por_pagina&page` | Historial paginado (más reciente primero) |
+| POST                | `/salones/{id}/reglas`                            | Crear regla (su `zona_id` debe ser de ese salón)          |
+| GET                 | `/zonas/{id}` · `/luces/{id}` · `/sensores/{id}` · `/reglas/{id}` | Detalle                                   |
+| PATCH               | `/zonas/{id}/modo`                                | `{ "modo": "automatico" \| "manual" }`                    |
+| POST                | `/luces/{id}/comando` · `/zonas/{id}/comando`     | `{ "accion": "encender" \| "apagar", "id_solicitud": "<uuid>" }` → `resultado`: `completada` · `pendiente` (HTTP 202) · `fallida` · `sin_cambio` |
+| PUT · DELETE        | `/reglas/{id}`                                    | Reemplazar · borrar regla                                 |
+| GET                 | `/estadisticas?rango`                             | PROPUESTA, Fase 7                                         |
+| *                   | `/salones/{id}/sim/...` · `/sim/...`              | Simulador, ver sección 6 (solo con `LUMICLASS_DRIVER=simulado`; si no, 404) |
+
+**Aislamiento entre cuentas:** cada `{id}` de la ruta se busca solo entre los recursos de la cuenta que
+inició sesión (`Route::bind` en `routes/api.php`). Lo de otra cuenta responde `404 no_encontrado`, igual
+que si no existiera, para no revelar qué existe. Lo prueba `tests/Feature/Api/AislamientoTest.php`.
 
 **Formato de error** (todas las rutas `/api`): `{"error": {"codigo": "...", "mensaje": "...", "detalles"?: {...}}}`.
 
@@ -110,6 +138,8 @@ LUMICLASS/
 - **Orden por zona:** una luz rechazada no detiene a las demás; el detalle va en `resultados`.
 - **Orden manual en zona automática:** la zona pasa a manual (si no, una regla la revertiría) y queda en el historial.
 - **Ids no numéricos o inexistentes:** `404 no_encontrado`. Método incorrecto: `405`.
+- **Cuentas:** correo repetido (sin importar mayúsculas) → `400`; login fallido → `401 credenciales_invalidas`
+  con el mismo mensaje exista o no el correo; sesión vencida o sin token CSRF → `419 sesion_expirada`.
 - **Errores internos:** `500 error_interno` sin detalles; el detalle queda en `storage/logs`.
 - **API caída (Fase 6–7):** el frontend muestra "Sin conexión con el servidor" y conserva los últimos datos, marcados como desactualizados.
 
@@ -138,22 +168,22 @@ consultarPendiente(actuador)              → completada | pendiente | fallida
 
 La espera es de 10 s (y no 3 s) para que una respuesta `lento` de 5 s alcance a confirmar.
 
-**Rutas del simulador** (`/api/v1/sim`, base para la página "Simulador" de la Fase 6):
+**Rutas del simulador** (`/api/v1`, con sesión; base para la página "Simulador" de la Fase 6):
 
-| Método | Ruta                          | Cuerpo / uso                                                                 |
-| ------ | ----------------------------- | ---------------------------------------------------------------------------- |
-| GET    | `/sim/estado`                 | Driver, tiempos y respuesta configurada de cada servo                        |
-| POST   | `/sim/presencia`              | `{ "presencia": true\|false, "zona_id"?, "conteo_personas"? }` (sin zona = todo el salón) |
-| PATCH  | `/sim/sensores/{id}`          | `{ "conexion": "activo"\|"inactivo"\|"falla" }`                               |
-| PATCH  | `/sim/actuadores/{id}`        | `{ "respuesta"?: "ok"\|"falla"\|"lento"\|"sin_respuesta", "conexion"? }`       |
-| POST   | `/sim/luces/{id}/interruptor` | `{ "estado": "encendida"\|"apagada" }`: alguien usó el interruptor a mano     |
-| POST   | `/sim/tick`                   | Ejecuta un tick ahora                                                        |
-| POST   | `/sim/reiniciar`              | Todo activo, sin lecturas, luces apagadas, zonas en automático              |
+| Método | Ruta                             | Cuerpo / uso                                                                 |
+| ------ | -------------------------------- | ---------------------------------------------------------------------------- |
+| GET    | `/salones/{id}/sim/estado`       | Driver, tiempos y respuesta configurada de cada servo del salón              |
+| POST   | `/salones/{id}/sim/presencia`    | `{ "presencia": true\|false, "zona_id"?, "conteo_personas"? }` (sin zona = todo el salón) |
+| POST   | `/salones/{id}/sim/tick`         | Ejecuta un tick ahora                                                        |
+| POST   | `/salones/{id}/sim/reiniciar`    | Solo ese salón: todo activo, sin lecturas, luces apagadas, zonas en automático |
+| PATCH  | `/sim/sensores/{id}`             | `{ "conexion": "activo"\|"inactivo"\|"falla" }`                               |
+| PATCH  | `/sim/actuadores/{id}`           | `{ "respuesta"?: "ok"\|"falla"\|"lento"\|"sin_respuesta", "conexion"? }`       |
+| POST   | `/sim/luces/{id}/interruptor`    | `{ "estado": "encendida"\|"apagada" }`: alguien usó el interruptor a mano     |
 
 **Motor de reglas** (`app/Servicios/MotorReglas.php`):
 
 - Solo en zonas en modo automático y con ocupación conocida. Evalúa las reglas activas de la zona y las
-  globales por prioridad (menor número primero); **gana la primera cuya condición se cumple por completo**,
+  globales **de su mismo salón** por prioridad (menor número primero); **gana la primera cuya condición se cumple por completo**,
   incluida la duración (`duracion_segundos × LUMICLASS_FACTOR_TIEMPO_REGLAS`).
 - Se ejecuta al cambiar la presencia o la conexión de un sensor, y en cada tick (reglas con duración).
 - Reglas iniciales (seeder): `ocupado → encender` y `vacio durante 300 s → apagar`

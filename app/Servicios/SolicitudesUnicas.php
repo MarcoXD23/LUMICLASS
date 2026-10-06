@@ -10,7 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * Evita ejecutar dos veces la misma orden (doble clic, reintento por red lenta).
+ * Evita ejecutar dos veces la misma orden (doble clic, reintento por red lenta). El id es único por usuario.
  * Solo se guardan respuestas exitosas: si una orden fue rechazada, reintentarla la evalúa de nuevo.
  */
 class SolicitudesUnicas
@@ -19,8 +19,10 @@ class SolicitudesUnicas
     public function ejecutarUnaVez(Request $request, string $idSolicitud, Closure $accion): JsonResponse
     {
         $ruta = $request->method().' '.$request->path();
+        $userId = $request->user()?->id;
+        $buscar = fn () => SolicitudProcesada::query()->where('user_id', $userId)->where('id_solicitud', $idSolicitud)->first();
 
-        $previa = SolicitudProcesada::query()->where('id_solicitud', $idSolicitud)->first();
+        $previa = $buscar();
         if ($previa !== null) {
             return $this->repetir($previa, $ruta);
         }
@@ -30,6 +32,7 @@ class SolicitudesUnicas
         if ($respuesta->isSuccessful()) {
             try {
                 SolicitudProcesada::create([
+                    'user_id' => $userId,
                     'id_solicitud' => $idSolicitud,
                     'ruta' => $ruta,
                     'codigo_http' => $respuesta->getStatusCode(),
@@ -37,9 +40,7 @@ class SolicitudesUnicas
                 ]);
             } catch (UniqueConstraintViolationException) {
                 // Otra petición idéntica terminó al mismo tiempo: se responde lo que ella guardó.
-                $guardada = SolicitudProcesada::query()->where('id_solicitud', $idSolicitud)->firstOrFail();
-
-                return $this->repetir($guardada, $ruta);
+                return $this->repetir($buscar(), $ruta);
             }
         }
 

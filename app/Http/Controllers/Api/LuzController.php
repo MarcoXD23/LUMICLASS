@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ComandoLuzRequest;
 use App\Http\Resources\LuzResource;
 use App\Models\Luz;
+use App\Models\Salon;
 use App\Servicios\ServicioLuces;
 use App\Servicios\SolicitudesUnicas;
 use Illuminate\Http\JsonResponse;
@@ -15,9 +16,9 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class LuzController extends Controller
 {
-    public function index(): AnonymousResourceCollection
+    public function index(Salon $salon): AnonymousResourceCollection
     {
-        return LuzResource::collection(Luz::query()->with('actuador')->orderBy('id')->get());
+        return LuzResource::collection($salon->luces()->with('actuador')->orderBy('luces.id')->get());
     }
 
     public function show(Luz $luz): LuzResource

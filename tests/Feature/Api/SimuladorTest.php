@@ -7,9 +7,9 @@ use App\Enums\EstadoLuz;
 use App\Enums\ModoZona;
 use App\Models\Actuador;
 use App\Models\Luz;
+use App\Models\Salon;
 use App\Models\Sensor;
 use App\Models\Zona;
-use Database\Seeders\SalonDemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -17,21 +17,23 @@ class SimuladorTest extends TestCase
 {
     use RefreshDatabase;
 
+    private Salon $salon;
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->seed(SalonDemoSeeder::class);
+        $this->salon = $this->iniciarSesionDemo();
     }
 
     public function test_forzar_salon_ocupado_enciende_las_luces_por_regla(): void
     {
-        $this->postJson('/api/v1/sim/presencia', ['presencia' => true])
+        $this->postJson("/api/v1/salones/{$this->salon->id}/sim/presencia", ['presencia' => true])
             ->assertOk()
             ->assertJsonPath('data.sensores_actualizados', 2)
             ->assertJsonPath('data.ordenes_reglas', 4);
 
-        $this->getJson('/api/v1/salon/estado')
+        $this->getJson("/api/v1/salones/{$this->salon->id}/estado")
             ->assertJsonPath('data.ocupacion', 'ocupado')
             ->assertJsonPath('data.luces.encendidas', 4);
 
@@ -43,11 +45,11 @@ class SimuladorTest extends TestCase
     {
         $zona = Zona::orderBy('id')->first();
 
-        $this->postJson('/api/v1/sim/presencia', ['presencia' => true, 'zona_id' => $zona->id, 'conteo_personas' => 12])
+        $this->postJson("/api/v1/salones/{$this->salon->id}/sim/presencia", ['presencia' => true, 'zona_id' => $zona->id, 'conteo_personas' => 12])
             ->assertOk()
             ->assertJsonPath('data.sensores_actualizados', 1);
 
-        $this->getJson('/api/v1/salon/estado')
+        $this->getJson("/api/v1/salones/{$this->salon->id}/estado")
             ->assertJsonPath('data.personas_detectadas', 12)
             ->assertJsonPath('data.zonas.0.ocupacion', 'ocupado')
             ->assertJsonPath('data.zonas.1.ocupacion', 'desconocida')
@@ -63,18 +65,18 @@ class SimuladorTest extends TestCase
             ->assertJsonPath('cambio', true)
             ->assertJsonPath('data.conexion', 'falla');
 
-        $this->getJson('/api/v1/salon/estado')->assertJsonPath('data.alertas.0.nivel', 'error');
+        $this->getJson("/api/v1/salones/{$this->salon->id}/estado")->assertJsonPath('data.alertas.0.nivel', 'error');
         $this->assertDatabaseHas('eventos', ['tipo' => 'sensor.conexion', 'severidad' => 'error']);
 
         // Solo queda un sensor activo para simular.
-        $this->postJson('/api/v1/sim/presencia', ['presencia' => true])->assertJsonPath('data.sensores_actualizados', 1);
+        $this->postJson("/api/v1/salones/{$this->salon->id}/sim/presencia", ['presencia' => true])->assertJsonPath('data.sensores_actualizados', 1);
     }
 
     public function test_sin_sensores_activos_responde_409(): void
     {
         Sensor::query()->update(['conexion' => EstadoConexion::Inactivo->value]);
 
-        $this->postJson('/api/v1/sim/presencia', ['presencia' => true])
+        $this->postJson("/api/v1/salones/{$this->salon->id}/sim/presencia", ['presencia' => true])
             ->assertStatus(409)
             ->assertJsonPath('error.codigo', 'sin_sensores_activos');
     }
@@ -88,7 +90,7 @@ class SimuladorTest extends TestCase
             ->assertJsonPath('data.respuesta_simulada', 'lento')
             ->assertJsonPath('data.conexion', 'inactivo');
 
-        $this->getJson('/api/v1/sim/estado')
+        $this->getJson("/api/v1/salones/{$this->salon->id}/sim/estado")
             ->assertOk()
             ->assertJsonPath('data.driver', 'simulado')
             ->assertJsonPath('data.actuadores.0.respuesta_simulada', 'lento')
@@ -120,16 +122,16 @@ class SimuladorTest extends TestCase
 
     public function test_reiniciar_vuelve_al_escenario_inicial(): void
     {
-        $this->postJson('/api/v1/sim/presencia', ['presencia' => true]);
+        $this->postJson("/api/v1/salones/{$this->salon->id}/sim/presencia", ['presencia' => true]);
         Zona::query()->update(['modo' => ModoZona::Manual->value]);
         $this->patchJson('/api/v1/sim/actuadores/'.Actuador::first()->id, ['respuesta' => 'falla']);
 
-        $this->postJson('/api/v1/sim/reiniciar')->assertOk();
+        $this->postJson("/api/v1/salones/{$this->salon->id}/sim/reiniciar")->assertOk();
 
         $this->assertSame(4, Luz::where('estado_real', EstadoLuz::Apagada)->count());
         $this->assertSame(2, Zona::where('modo', ModoZona::Automatico)->count());
         $this->assertSame(0, Sensor::whereNotNull('presencia')->count());
-        $this->getJson('/api/v1/sim/estado')->assertJsonPath('data.actuadores.0.respuesta_simulada', 'ok');
+        $this->getJson("/api/v1/salones/{$this->salon->id}/sim/estado")->assertJsonPath('data.actuadores.0.respuesta_simulada', 'ok');
         $this->assertDatabaseHas('eventos', ['tipo' => 'simulador.reinicio']);
     }
 
@@ -137,7 +139,7 @@ class SimuladorTest extends TestCase
     {
         config(['lumiclass.driver' => 'real']);
 
-        $this->postJson('/api/v1/sim/presencia', ['presencia' => true])
+        $this->postJson("/api/v1/salones/{$this->salon->id}/sim/presencia", ['presencia' => true])
             ->assertNotFound()
             ->assertJsonPath('error.codigo', 'simulador_desactivado');
     }

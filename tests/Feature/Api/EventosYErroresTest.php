@@ -5,6 +5,7 @@ namespace Tests\Feature\Api;
 use App\Enums\OrigenEvento;
 use App\Enums\SeveridadEvento;
 use App\Enums\TipoEvento;
+use App\Models\Salon;
 use App\Servicios\RegistroEventos;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -14,9 +15,24 @@ class EventosYErroresTest extends TestCase
 {
     use RefreshDatabase;
 
+    private Salon $salon;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->iniciarSesion();
+        $this->salon = Salon::factory()->create();
+    }
+
     private function registrar(TipoEvento $tipo, SeveridadEvento $severidad = SeveridadEvento::Info): void
     {
-        app(RegistroEventos::class)->registrar($tipo, OrigenEvento::Sistema, 'Evento de prueba', null, [], $severidad);
+        app(RegistroEventos::class)->registrar($tipo, OrigenEvento::Sistema, 'Evento de prueba', null, [], $severidad, $this->salon);
+    }
+
+    private function eventos(string $filtros = ''): string
+    {
+        return "/api/v1/salones/{$this->salon->id}/eventos{$filtros}";
     }
 
     public function test_historial_paginado_del_mas_reciente_al_mas_antiguo(): void
@@ -25,7 +41,7 @@ class EventosYErroresTest extends TestCase
             $this->registrar(TipoEvento::LuzComando);
         }
 
-        $this->getJson('/api/v1/eventos?por_pagina=2')
+        $this->getJson($this->eventos('?por_pagina=2'))
             ->assertOk()
             ->assertJsonCount(2, 'data')
             ->assertJsonPath('data.0.id', 3)
@@ -40,16 +56,16 @@ class EventosYErroresTest extends TestCase
         $this->registrar(TipoEvento::ComandoRechazado, SeveridadEvento::Advertencia);
         Carbon::setTestNow();
 
-        $this->getJson('/api/v1/eventos?tipo=comando.rechazado')->assertJsonCount(1, 'data');
-        $this->getJson('/api/v1/eventos?severidad=advertencia')->assertJsonCount(1, 'data');
-        $this->getJson('/api/v1/eventos?desde=2026-10-02&hasta=2026-10-06')
+        $this->getJson($this->eventos('?tipo=comando.rechazado'))->assertJsonCount(1, 'data');
+        $this->getJson($this->eventos('?severidad=advertencia'))->assertJsonCount(1, 'data');
+        $this->getJson($this->eventos('?desde=2026-10-02&hasta=2026-10-06'))
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.tipo', 'comando.rechazado');
     }
 
     public function test_filtros_invalidos_responden_400(): void
     {
-        $this->getJson('/api/v1/eventos?tipo=inventado&desde=2026-10-06&hasta=2026-10-01&por_pagina=500')
+        $this->getJson($this->eventos('?tipo=inventado&desde=2026-10-06&hasta=2026-10-01&por_pagina=500'))
             ->assertStatus(400)
             ->assertJsonValidationErrors(['tipo', 'hasta', 'por_pagina'], 'error.detalles');
     }
@@ -68,7 +84,7 @@ class EventosYErroresTest extends TestCase
 
     public function test_json_mal_formado_responde_400(): void
     {
-        $this->call('POST', '/api/v1/reglas', [], [], [], ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'], '{nombre: roto')
+        $this->call('POST', "/api/v1/salones/{$this->salon->id}/reglas", [], [], [], ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json'], '{nombre: roto')
             ->assertStatus(400)
             ->assertJsonPath('error.codigo', 'datos_invalidos');
     }

@@ -16,6 +16,13 @@ class ComandoLucesTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->iniciarSesion();
+    }
+
     private function ordenar(Luz $luz, string $accion, ?string $idSolicitud = null)
     {
         return $this->postJson("/api/v1/luces/{$luz->id}/comando", [

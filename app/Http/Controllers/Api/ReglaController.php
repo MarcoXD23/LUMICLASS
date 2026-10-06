@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\GuardarReglaRequest;
 use App\Http\Resources\ReglaResource;
 use App\Models\Regla;
+use App\Models\Salon;
 use App\Servicios\RegistroEventos;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -18,9 +19,9 @@ class ReglaController extends Controller
 {
     public function __construct(private readonly RegistroEventos $eventos) {}
 
-    public function index(): AnonymousResourceCollection
+    public function index(Salon $salon): AnonymousResourceCollection
     {
-        return ReglaResource::collection(Regla::query()->ordenadas()->get());
+        return ReglaResource::collection($salon->reglas()->ordenadas()->get());
     }
 
     public function show(Regla $regla): ReglaResource
@@ -28,10 +29,10 @@ class ReglaController extends Controller
         return ReglaResource::make($regla);
     }
 
-    public function store(GuardarReglaRequest $request): JsonResponse
+    public function store(GuardarReglaRequest $request, Salon $salon): JsonResponse
     {
-        $regla = DB::transaction(function () use ($request) {
-            $regla = Regla::create($request->validated());
+        $regla = DB::transaction(function () use ($request, $salon) {
+            $regla = $salon->reglas()->create($request->validated());
             $this->eventos->registrar(TipoEvento::ReglaCreada, OrigenEvento::Usuario, "Regla \"{$regla->nombre}\" creada.", $regla);
 
             return $regla;

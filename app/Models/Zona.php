@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ModoZona;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -39,5 +40,10 @@ class Zona extends Model
     public function sensores(): HasMany
     {
         return $this->hasMany(Sensor::class);
+    }
+
+    public function scopeDelUsuario(Builder $query, ?int $userId): void
+    {
+        $query->whereHas('salon', fn (Builder $q) => $q->where('user_id', $userId));
     }
 }

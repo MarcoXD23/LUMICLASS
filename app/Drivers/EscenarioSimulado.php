@@ -4,6 +4,7 @@ namespace App\Drivers;
 
 use App\Enums\RespuestaSimulada;
 use App\Models\Actuador;
+use App\Models\Salon;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -24,9 +25,9 @@ class EscenarioSimulado
         Cache::forever(self::PREFIJO.$actuador->id, $respuesta->value);
     }
 
-    public function reiniciar(): void
+    public function reiniciar(Salon $salon): void
     {
-        foreach (Actuador::query()->pluck('id') as $id) {
+        foreach ($salon->actuadores()->pluck('id') as $id) {
             Cache::forget(self::PREFIJO.$id);
         }
     }

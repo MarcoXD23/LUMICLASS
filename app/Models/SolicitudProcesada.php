@@ -8,7 +8,7 @@ class SolicitudProcesada extends Model
 {
     protected $table = 'solicitudes_procesadas';
 
-    protected $fillable = ['id_solicitud', 'ruta', 'codigo_http', 'respuesta'];
+    protected $fillable = ['user_id', 'id_solicitud', 'ruta', 'codigo_http', 'respuesta'];
 
     protected function casts(): array
     {

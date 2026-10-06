@@ -6,6 +6,7 @@ use App\Models\Actuador;
 use App\Models\Luz;
 use App\Models\Salon;
 use App\Models\Sensor;
+use App\Models\User;
 use App\Models\Zona;
 use Database\Seeders\SalonDemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -15,25 +16,27 @@ class SaludYSalonTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_salud_informa_base_de_datos_y_driver(): void
+    public function test_salud_es_publica_e_informa_base_de_datos_y_driver(): void
     {
         $this->getJson('/api/v1/salud')
             ->assertOk()
             ->assertJson(['estado' => 'ok', 'base_datos' => 'ok', 'driver' => 'simulado']);
     }
 
-    public function test_estado_sin_salon_responde_404_con_instruccion(): void
+    public function test_salon_inexistente_responde_404(): void
     {
-        $this->getJson('/api/v1/salon/estado')
+        $this->iniciarSesion();
+
+        $this->getJson('/api/v1/salones/999/estado')
             ->assertNotFound()
-            ->assertJsonPath('error.codigo', 'sin_salon');
+            ->assertJsonPath('error.codigo', 'no_encontrado');
     }
 
     public function test_estado_del_salon_de_ejemplo(): void
     {
-        $this->seed(SalonDemoSeeder::class);
+        $salon = $this->iniciarSesionDemo();
 
-        $this->getJson('/api/v1/salon/estado')
+        $this->getJson("/api/v1/salones/{$salon->id}/estado")
             ->assertOk()
             ->assertJsonPath('data.salon.nombre', 'Salón 101')
             ->assertJsonPath('data.ocupacion', 'desconocida')
@@ -52,18 +55,20 @@ class SaludYSalonTest extends TestCase
         $this->seed(SalonDemoSeeder::class);
         $this->seed(SalonDemoSeeder::class);
 
+        $this->assertSame(1, User::count());
         $this->assertSame(1, Salon::count());
         $this->assertSame(4, Luz::count());
     }
 
     public function test_ocupacion_y_alertas_reflejan_los_sensores_y_servos(): void
     {
+        $this->iniciarSesion();
         $zona = Zona::factory()->create();
         Sensor::factory()->for($zona)->conPresencia(true)->create();
         Sensor::factory()->for($zona)->enFalla()->create(['nombre' => 'PIR roto']);
-        Luz::factory()->for($zona)->for(Actuador::factory()->enFalla(), 'actuador')->create();
+        Luz::factory()->for($zona)->for(Actuador::factory()->enFalla()->state(['salon_id' => $zona->salon_id]), 'actuador')->create();
 
-        $respuesta = $this->getJson('/api/v1/salon/estado')->assertOk();
+        $respuesta = $this->getJson("/api/v1/salones/{$zona->salon_id}/estado")->assertOk();
 
         $respuesta->assertJsonPath('data.ocupacion', 'ocupado');
         $this->assertEqualsCanonicalizing(
@@ -75,20 +80,21 @@ class SaludYSalonTest extends TestCase
 
     public function test_sensor_en_falla_no_cuenta_como_salon_vacio(): void
     {
+        $this->iniciarSesion();
         $zona = Zona::factory()->create();
         Sensor::factory()->for($zona)->enFalla()->create(['presencia' => false]);
 
-        $this->getJson('/api/v1/salon/estado')->assertJsonPath('data.ocupacion', 'desconocida');
+        $this->getJson("/api/v1/salones/{$zona->salon_id}/estado")->assertJsonPath('data.ocupacion', 'desconocida');
     }
 
     public function test_listas_y_detalle_de_zonas_luces_y_sensores(): void
     {
-        $this->seed(SalonDemoSeeder::class);
+        $salon = $this->iniciarSesionDemo();
 
-        $this->getJson('/api/v1/zonas')->assertOk()->assertJsonCount(2, 'data');
-        $this->getJson('/api/v1/luces')->assertOk()->assertJsonCount(4, 'data')
+        $this->getJson("/api/v1/salones/{$salon->id}/zonas")->assertOk()->assertJsonCount(2, 'data');
+        $this->getJson("/api/v1/salones/{$salon->id}/luces")->assertOk()->assertJsonCount(4, 'data')
             ->assertJsonPath('data.0.actuador.conexion', 'activo');
-        $this->getJson('/api/v1/sensores')->assertOk()->assertJsonCount(2, 'data');
+        $this->getJson("/api/v1/salones/{$salon->id}/sensores")->assertOk()->assertJsonCount(2, 'data');
 
         $sensor = Sensor::first();
         $this->getJson("/api/v1/sensores/{$sensor->id}")->assertOk()->assertJsonPath('data.tipo', 'pir');

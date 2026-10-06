@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\CambiarModoRequest;
 use App\Http\Requests\ComandoLuzRequest;
 use App\Http\Resources\ZonaResource;
+use App\Models\Salon;
 use App\Models\Zona;
 use App\Servicios\ServicioLuces;
 use App\Servicios\ServicioZonas;
@@ -18,9 +19,9 @@ class ZonaController extends Controller
 {
     private const RELACIONES = ['luces.actuador', 'sensores'];
 
-    public function index(): AnonymousResourceCollection
+    public function index(Salon $salon): AnonymousResourceCollection
     {
-        return ZonaResource::collection(Zona::query()->with(self::RELACIONES)->orderBy('id')->get());
+        return ZonaResource::collection($salon->zonas()->with(self::RELACIONES)->orderBy('id')->get());
     }
 
     public function show(Zona $zona): ZonaResource

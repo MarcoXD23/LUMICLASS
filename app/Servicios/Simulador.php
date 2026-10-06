@@ -13,11 +13,12 @@ use App\Enums\TipoEvento;
 use App\Exceptions\ComandoRechazado;
 use App\Models\Actuador;
 use App\Models\Luz;
+use App\Models\Salon;
 use App\Models\Sensor;
 use App\Models\Zona;
 use Illuminate\Support\Facades\DB;
 
-/** Acciones de la página "Simulador": fuerzan situaciones para probar y presentar el sistema. */
+/** Acciones de la página "Simulador": fuerzan situaciones en UN salón para probar y presentar el sistema. */
 class Simulador
 {
     public function __construct(
@@ -34,11 +35,11 @@ class Simulador
      *
      * @throws ComandoRechazado si no hay sensores activos
      */
-    public function forzarPresencia(bool $presencia, ?Zona $zona, ?int $conteoPersonas): array
+    public function forzarPresencia(Salon $salon, bool $presencia, ?Zona $zona, ?int $conteoPersonas): array
     {
-        $sensores = Sensor::query()
-            ->where('conexion', EstadoConexion::Activo)
-            ->when($zona, fn ($q) => $q->where('zona_id', $zona->id))
+        $sensores = $salon->sensores()
+            ->where('sensores.conexion', EstadoConexion::Activo)
+            ->when($zona, fn ($q) => $q->where('sensores.zona_id', $zona->id))
             ->get();
 
         if ($sensores->isEmpty()) {
@@ -108,11 +109,13 @@ class Simulador
         );
     }
 
-    /** Vuelve al escenario inicial: todo activo, sin lecturas, luces apagadas y zonas en automático. */
-    public function reiniciar(): void
+    /** Vuelve al escenario inicial SOLO en este salón: todo activo, sin lecturas, luces apagadas y zonas en automático. */
+    public function reiniciar(Salon $salon): void
     {
-        DB::transaction(function () {
-            Sensor::query()->update([
+        $zonas = $salon->zonas()->pluck('id');
+
+        DB::transaction(function () use ($salon, $zonas) {
+            Sensor::query()->whereIn('zona_id', $zonas)->update([
                 'conexion' => EstadoConexion::Activo->value,
                 'presencia' => null,
                 'presencia_desde' => null,
@@ -120,7 +123,7 @@ class Simulador
                 'ultima_lectura' => null,
                 'updated_at' => now(),
             ]);
-            Actuador::query()->update([
+            Actuador::query()->where('salon_id', $salon->id)->update([
                 'conexion' => EstadoConexion::Activo->value,
                 'ocupado' => false,
                 'orden_pendiente' => null,
@@ -128,21 +131,21 @@ class Simulador
                 'ultimo_resultado' => null,
                 'updated_at' => now(),
             ]);
-            Luz::query()->update([
+            Luz::query()->whereIn('zona_id', $zonas)->update([
                 'estado_deseado' => EstadoLuz::Apagada->value,
                 'estado_real' => EstadoLuz::Apagada->value,
                 'updated_at' => now(),
             ]);
-            Zona::query()->update(['modo' => ModoZona::Automatico->value, 'updated_at' => now()]);
+            Zona::query()->whereIn('id', $zonas)->update(['modo' => ModoZona::Automatico->value, 'updated_at' => now()]);
 
-            $this->eventos->registrar(TipoEvento::SimuladorReinicio, OrigenEvento::Simulador, 'Escenario del simulador reiniciado.');
+            $this->eventos->registrar(TipoEvento::SimuladorReinicio, OrigenEvento::Simulador, 'Escenario del simulador reiniciado.', $salon);
         });
 
-        $this->escenario->reiniciar();
+        $this->escenario->reiniciar($salon);
     }
 
     /** @return array<string, mixed> */
-    public function estado(): array
+    public function estado(Salon $salon): array
     {
         return [
             'driver' => config('lumiclass.driver'),
@@ -151,14 +154,20 @@ class Simulador
                 'servo_segundos_espera' => config('lumiclass.servo.segundos_espera_confirmacion'),
                 'factor_tiempo_reglas' => config('lumiclass.reglas.factor_tiempo'),
             ],
-            'actuadores' => Actuador::query()->orderBy('id')->get()->map(fn (Actuador $actuador) => [
-                'id' => $actuador->id,
-                'nombre' => $actuador->nombre,
-                'conexion' => $actuador->conexion->value,
-                'ocupado' => $actuador->ocupado,
-                'orden_pendiente' => $actuador->orden_pendiente?->value,
-                'respuesta_simulada' => $this->escenario->respuesta($actuador)->value,
-            ])->all(),
+            'actuadores' => $salon->actuadores()->orderBy('id')->get()->map(fn (Actuador $actuador) => $this->estadoActuador($actuador))->all(),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public function estadoActuador(Actuador $actuador): array
+    {
+        return [
+            'id' => $actuador->id,
+            'nombre' => $actuador->nombre,
+            'conexion' => $actuador->conexion->value,
+            'ocupado' => $actuador->ocupado,
+            'orden_pendiente' => $actuador->orden_pendiente?->value,
+            'respuesta_simulada' => $this->escenario->respuesta($actuador)->value,
         ];
     }
 }

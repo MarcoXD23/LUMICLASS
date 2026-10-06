@@ -24,6 +24,7 @@ class AccionamientoTest extends TestCase
     {
         parent::setUp();
 
+        $this->iniciarSesion();
         $this->luz = Luz::factory()->for(Zona::factory()->manual())->create(['estado_real' => EstadoLuz::Apagada]);
     }
 
@@ -39,7 +40,7 @@ class AccionamientoTest extends TestCase
 
     private function tick(): void
     {
-        $this->postJson('/api/v1/sim/tick')->assertOk();
+        $this->postJson("/api/v1/salones/{$this->luz->zona->salon_id}/sim/tick")->assertOk();
     }
 
     public function test_falla_deja_la_luz_desconocida_con_error_y_alerta(): void
@@ -50,7 +51,7 @@ class AccionamientoTest extends TestCase
 
         $this->assertFalse($this->luz->actuador->fresh()->ocupado);
         $this->assertDatabaseHas('eventos', ['tipo' => 'actuador.falla', 'severidad' => 'error']);
-        $this->getJson('/api/v1/salon/estado')->assertJsonPath('data.alertas.0.entidad_tipo', 'luz');
+        $this->getJson("/api/v1/salones/{$this->luz->zona->salon_id}/estado")->assertJsonPath('data.alertas.0.entidad_tipo', 'luz');
     }
 
     public function test_lento_queda_pendiente_bloquea_otra_orden_y_luego_confirma(): void
@@ -106,7 +107,7 @@ class AccionamientoTest extends TestCase
         $this->encender()->assertStatus(202);
 
         $this->travel(10)->seconds();
-        $this->getJson('/api/v1/salon/estado')->assertOk()->assertJsonPath('data.luces.encendidas', 1);
+        $this->getJson("/api/v1/salones/{$this->luz->zona->salon_id}/estado")->assertOk()->assertJsonPath('data.luces.encendidas', 1);
     }
 
     public function test_driver_real_aun_no_implementado_responde_fallida(): void

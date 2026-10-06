@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\EstadoLuz;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -35,5 +36,10 @@ class Luz extends Model
     public function actuador(): BelongsTo
     {
         return $this->belongsTo(Actuador::class);
+    }
+
+    public function scopeDelUsuario(Builder $query, ?int $userId): void
+    {
+        $query->whereHas('zona.salon', fn (Builder $q) => $q->where('user_id', $userId));
     }
 }

@@ -18,7 +18,7 @@ class Regla extends Model
 
     protected $table = 'reglas';
 
-    protected $fillable = ['zona_id', 'nombre', 'activa', 'prioridad', 'condicion', 'accion'];
+    protected $fillable = ['salon_id', 'zona_id', 'nombre', 'activa', 'prioridad', 'condicion', 'accion'];
 
     protected function casts(): array
     {
@@ -28,6 +28,12 @@ class Regla extends Model
             'condicion' => 'array',
             'accion' => 'array',
         ];
+    }
+
+    /** @return BelongsTo<Salon, $this> */
+    public function salon(): BelongsTo
+    {
+        return $this->belongsTo(Salon::class);
     }
 
     /** @return BelongsTo<Zona, $this> */
@@ -40,5 +46,10 @@ class Regla extends Model
     public function scopeOrdenadas(Builder $query): void
     {
         $query->orderBy('prioridad')->orderBy('id');
+    }
+
+    public function scopeDelUsuario(Builder $query, ?int $userId): void
+    {
+        $query->whereHas('salon', fn (Builder $q) => $q->where('user_id', $userId));
     }
 }

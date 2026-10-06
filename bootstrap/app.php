@@ -1,9 +1,11 @@
 <?php
 
 use App\Http\RespuestaError;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
@@ -18,7 +20,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // El frontend (mismo dominio, puerto 8001) usa la cookie de sesión; scripts y placa usan token.
+        $middleware->statefulApi();
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
@@ -32,6 +35,15 @@ return Application::configure(basePath: dirname(__DIR__))
             ? RespuestaError::json('datos_invalidos', 'Los datos enviados no son válidos.', 400, $e->errors())
             : null);
 
+        $exceptions->render(fn (AuthenticationException $e, Request $request) => $esApi($request)
+            ? RespuestaError::json('no_autenticado', 'Inicia sesión para continuar.', 401)
+            : null);
+
+        $exceptions->render(fn (ThrottleRequestsException $e, Request $request) => $esApi($request)
+            ? RespuestaError::json('demasiados_intentos', 'Demasiados intentos. Espera un minuto y vuelve a probar.', 429)
+                ->withHeaders($e->getHeaders())
+            : null);
+
         $exceptions->render(fn (NotFoundHttpException $e, Request $request) => $esApi($request)
             ? RespuestaError::json('no_encontrado', 'El recurso solicitado no existe.', 404)
             : null);
@@ -40,9 +52,12 @@ return Application::configure(basePath: dirname(__DIR__))
             ? RespuestaError::json('metodo_no_permitido', 'Este método HTTP no está permitido en esta ruta.', 405)
             : null);
 
-        $exceptions->render(fn (HttpExceptionInterface $e, Request $request) => $esApi($request)
-            ? RespuestaError::json('error_http', $e->getMessage() ?: 'No se pudo procesar la solicitud.', $e->getStatusCode())
-            : null);
+        $exceptions->render(fn (HttpExceptionInterface $e, Request $request) => match (true) {
+            ! $esApi($request) => null,
+            // 419: falta el token CSRF o la sesión del navegador expiró.
+            $e->getStatusCode() === 419 => RespuestaError::json('sesion_expirada', 'La sesión expiró o falta el token de seguridad. Recarga la página e inicia sesión de nuevo.', 419),
+            default => RespuestaError::json('error_http', $e->getMessage() ?: 'No se pudo procesar la solicitud.', $e->getStatusCode()),
+        });
 
         // Cualquier otro fallo: sin detalles internos (quedan en storage/logs).
         $exceptions->render(fn (Throwable $e, Request $request) => $esApi($request) && ! config('app.debug')

@@ -12,11 +12,14 @@ class GuardarReglaRequest extends FormRequest
 {
     public function rules(): array
     {
+        // Al crear, el salón viene en la ruta; al editar, es el de la regla.
+        $salonId = $this->route('salon')?->id ?? $this->route('regla')?->salon_id;
+
         return [
             'nombre' => ['required', 'string', 'max:100'],
             'activa' => ['required', 'boolean'],
             'prioridad' => ['required', 'integer', 'between:1,1000'],
-            'zona_id' => ['nullable', 'integer', 'exists:zonas,id'],
+            'zona_id' => ['nullable', 'integer', Rule::exists('zonas', 'id')->where('salon_id', $salonId)],
             // array:... rechaza claves desconocidas para no guardar condiciones que nadie evalúa.
             'condicion' => ['required', 'array:presencia,duracion_segundos'],
             'condicion.presencia' => ['required', Rule::in([Ocupacion::Ocupado->value, Ocupacion::Vacio->value])],

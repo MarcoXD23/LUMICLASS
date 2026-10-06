@@ -4,8 +4,10 @@ namespace App\Models;
 
 use App\Enums\AccionLuz;
 use App\Enums\EstadoConexion;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /** Servomotor que acciona mecánicamente un interruptor de pared. */
@@ -15,7 +17,7 @@ class Actuador extends Model
 
     protected $table = 'actuadores';
 
-    protected $fillable = ['nombre', 'conexion', 'ocupado', 'orden_pendiente', 'orden_iniciada_en', 'ultimo_resultado'];
+    protected $fillable = ['salon_id', 'nombre', 'conexion', 'ocupado', 'orden_pendiente', 'orden_iniciada_en', 'ultimo_resultado'];
 
     protected $attributes = ['conexion' => 'activo', 'ocupado' => false];
 
@@ -29,9 +31,20 @@ class Actuador extends Model
         ];
     }
 
+    /** @return BelongsTo<Salon, $this> */
+    public function salon(): BelongsTo
+    {
+        return $this->belongsTo(Salon::class);
+    }
+
     /** @return HasOne<Luz, $this> */
     public function luz(): HasOne
     {
         return $this->hasOne(Luz::class);
+    }
+
+    public function scopeDelUsuario(Builder $query, ?int $userId): void
+    {
+        $query->whereHas('salon', fn (Builder $q) => $q->where('user_id', $userId));
     }
 }

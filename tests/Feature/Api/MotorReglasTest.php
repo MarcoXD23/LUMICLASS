@@ -8,9 +8,9 @@ use App\Enums\RespuestaSimulada;
 use App\Models\Evento;
 use App\Models\Luz;
 use App\Models\Regla;
+use App\Models\Salon;
 use App\Models\Sensor;
 use App\Models\Zona;
-use Database\Seeders\SalonDemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -20,16 +20,18 @@ class MotorReglasTest extends TestCase
 {
     use RefreshDatabase;
 
+    private Salon $salon;
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->seed(SalonDemoSeeder::class);
+        $this->salon = $this->iniciarSesionDemo();
     }
 
     private function presencia(bool $hay, ?int $zonaId = null): void
     {
-        $this->postJson('/api/v1/sim/presencia', array_filter(['presencia' => $hay, 'zona_id' => $zonaId], fn ($v) => $v !== null))->assertOk();
+        $this->postJson("/api/v1/salones/{$this->salon->id}/sim/presencia", array_filter(['presencia' => $hay, 'zona_id' => $zonaId], fn ($v) => $v !== null))->assertOk();
     }
 
     private function tick(): void
@@ -112,9 +114,9 @@ class MotorReglasTest extends TestCase
     public function test_regla_desactivada_no_se_aplica_y_la_prioridad_manda(): void
     {
         Regla::query()->update(['activa' => false]);
-        Regla::factory()->create(['prioridad' => 50, 'condicion' => ['presencia' => 'ocupado'], 'accion' => ['accion' => 'encender']]);
+        Regla::factory()->for($this->salon)->create(['prioridad' => 50, 'condicion' => ['presencia' => 'ocupado'], 'accion' => ['accion' => 'encender']]);
         // Prioridad más alta (número menor) gana: regla "rara" que apaga con presencia.
-        Regla::factory()->create(['prioridad' => 1, 'condicion' => ['presencia' => 'ocupado'], 'accion' => ['accion' => 'apagar']]);
+        Regla::factory()->for($this->salon)->create(['prioridad' => 1, 'condicion' => ['presencia' => 'ocupado'], 'accion' => ['accion' => 'apagar']]);
 
         $this->presencia(true);
 
@@ -125,7 +127,7 @@ class MotorReglasTest extends TestCase
     {
         [$primera, $segunda] = Zona::orderBy('id')->get();
         Regla::query()->update(['activa' => false]);
-        Regla::factory()->create(['zona_id' => $segunda->id, 'condicion' => ['presencia' => 'ocupado'], 'accion' => ['accion' => 'encender']]);
+        Regla::factory()->for($this->salon)->create(['zona_id' => $segunda->id, 'condicion' => ['presencia' => 'ocupado'], 'accion' => ['accion' => 'encender']]);
 
         $this->presencia(true);
 
