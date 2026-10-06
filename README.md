@@ -10,7 +10,9 @@ Aplicación web que muestra si el salón está ocupado o vacío, controla las lu
 
 ## Requisitos
 
-- [Node.js](https://nodejs.org/) 20.12 o superior (incluye npm). Probado en Windows 11 con Node 24.
+- [PHP](https://www.php.net/) 8.3 o superior (probado con PHP 8.4 en Windows 11).
+- [Composer](https://getcomposer.org/) 2.
+- [Node.js](https://nodejs.org/) 20 o superior (solo para compilar CSS/JS con Vite).
 - Git.
 
 ## Instalación (Windows, macOS o Linux)
@@ -18,38 +20,46 @@ Aplicación web que muestra si el salón está ocupado o vacío, controla las lu
 ```
 git clone https://github.com/MarcoXD23/LUMICLASS.git
 cd LUMICLASS
+composer install
+copy .env.example .env        # en macOS/Linux: cp .env.example .env
+php artisan key:generate
+php artisan migrate
 npm install
-npm run dev
+php artisan serve --port=8001
 ```
 
-- Frontend: http://localhost:5173
-- API: http://localhost:3000/api/v1/salud
+- Aplicación: http://localhost:8001
 
-La página debe mostrar **"API: conectada"**. Para cambiar puerto o driver, copia `apps/backend/.env.example` como `apps/backend/.env` (es opcional; sin él se usan los valores por defecto).
+Se usa el puerto **8001** y la cookie de sesión **`lumiclass_session`** para que LUMICLASS pueda correr al mismo tiempo que otro proyecto Laravel (que normalmente usa el 8000 y la cookie `laravel_session`) sin que se mezclen las sesiones.
 
-## Scripts
+## Comandos
 
-| Comando             | Qué hace                                                     |
-| ------------------- | ------------------------------------------------------------ |
-| `npm run dev`       | Levanta backend y frontend juntos (Ctrl+C detiene ambos)     |
-| `npm test`          | Ejecuta las pruebas de todos los paquetes                    |
-| `npm run lint`      | Revisa el código con ESLint                                  |
-| `npm run typecheck` | Revisa los tipos de TypeScript                               |
-| `npm run build`     | Compila backend y frontend en `dist/`                        |
-| `npm run format`    | Formatea el código con Prettier                              |
-| `npm run verificar` | Lint + formato + tipos + pruebas + compilación (antes de PR) |
+| Comando                         | Qué hace                                            |
+| ------------------------------- | --------------------------------------------------- |
+| `php artisan serve --port=8001` | Levanta la aplicación en http://localhost:8001      |
+| `npm run dev`                   | Compila CSS/JS en caliente con Vite (en otra consola) |
+| `npm run build`                 | Compila CSS/JS para producción                      |
+| `php artisan test`              | Ejecuta las pruebas                                 |
+| `php artisan migrate`           | Aplica las migraciones de la base de datos          |
+| `php artisan migrate:fresh --seed` | Recrea la base local desde cero con datos de ejemplo |
 
 ## Estructura
 
 ```
-apps/backend         API (Fastify + TypeScript)
-apps/frontend        Interfaz web (React + Vite + Tailwind)
-packages/compartido  Tipos y esquemas compartidos
-firmware/            Código de la placa (Fase 8)
-docs/                Arquitectura y documentación
-diseno/              Referencia de Figma
+app/         Lógica de la aplicación (modelos, controladores, servicios)
+routes/      Rutas web y de la API
+database/    Migraciones, seeders y base SQLite local
+resources/   Vistas, CSS y JS
+tests/       Pruebas (PHPUnit)
+firmware/    Código de la placa (Fase 8)
+docs/        Arquitectura y documentación
+diseno/      Referencia de Figma
 ```
 
-La arquitectura completa está en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md). Las reglas de trabajo están en [CLAUDE.md](CLAUDE.md).
+Las reglas de trabajo están en [CLAUDE.md](CLAUDE.md).
 
-**Estado:** Fase 3 completada (estructura inicial).
+## Sobre Laravel
+
+LUMICLASS está construido con [Laravel](https://laravel.com), un framework web de PHP. Documentación oficial: https://laravel.com/docs. Laravel es software de código abierto con licencia [MIT](https://opensource.org/licenses/MIT).
+
+**Estado:** migración a Laravel (estructura base instalada). El proyecto anterior en Node.js quedó guardado en el commit `d4e4b20` de la rama `feature/fase-4-backend-api`.
