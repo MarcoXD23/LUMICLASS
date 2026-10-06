@@ -1,0 +1,124 @@
+// Esquema de la base de datos de LUMICLASS (SQLite).
+// Los estados se guardan como texto y se validan con los esquemas de @lumiclass/compartido.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Salon {
+  id            String   @id @default(cuid())
+  nombre        String
+  zonas         Zona[]
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+}
+
+model Zona {
+  id            String   @id @default(cuid())
+  salonId       String
+  salon         Salon    @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  nombre        String
+  /// "automatico" | "manual"
+  modo          String   @default("automatico")
+  orden         Int      @default(0)
+  luces         Luz[]
+  sensores      Sensor[]
+  reglas        Regla[]
+  actualizadoEn DateTime @updatedAt
+
+  @@index([salonId])
+}
+
+/// Servomotor que acciona el interruptor de forma mecánica.
+model Actuador {
+  id              String   @id @default(cuid())
+  nombre          String
+  /// "activo" | "inactivo" | "falla"
+  conexion        String   @default("activo")
+  /// true mientras ejecuta una orden (evita dos órdenes a la vez).
+  ocupado         Boolean  @default(false)
+  ultimoResultado String?
+  luz             Luz?
+  actualizadoEn   DateTime @updatedAt
+}
+
+model Luz {
+  id            String   @id @default(cuid())
+  zonaId        String
+  zona          Zona     @relation(fields: [zonaId], references: [id], onDelete: Cascade)
+  nombre        String
+  /// "on" | "off": lo último que se pidió.
+  estadoDeseado String   @default("off")
+  /// "on" | "off" | "desconocido": lo que confirmó el hardware.
+  estadoReal    String   @default("desconocido")
+  actuadorId    String   @unique
+  actuador      Actuador @relation(fields: [actuadorId], references: [id])
+  actualizadoEn DateTime @updatedAt
+
+  @@index([zonaId])
+}
+
+model Sensor {
+  id             String    @id @default(cuid())
+  zonaId         String
+  zona           Zona      @relation(fields: [zonaId], references: [id], onDelete: Cascade)
+  nombre         String
+  /// "pir" | "radar" | "ultrasonico" | "otro"
+  tipo           String    @default("pir")
+  /// "activo" | "inactivo" | "falla"
+  conexion       String    @default("activo")
+  presencia      Boolean   @default(false)
+  /// Solo si el hardware puede contar personas.
+  conteoPersonas Int?
+  ultimaLectura  DateTime?
+  actualizadoEn  DateTime  @updatedAt
+
+  @@index([zonaId])
+}
+
+model Regla {
+  id            String   @id @default(cuid())
+  nombre        String   @unique
+  activa        Boolean  @default(true)
+  prioridad     Int      @default(100)
+  /// null = aplica a todas las zonas.
+  zonaId        String?
+  zona          Zona?    @relation(fields: [zonaId], references: [id], onDelete: Cascade)
+  /// JSON validado con esquemaCondicion.
+  condicion     String
+  /// JSON validado con esquemaAccionRegla.
+  accion        String
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+}
+
+/// Única fuente del historial, las alertas y las estadísticas.
+model Evento {
+  id        Int      @id @default(autoincrement())
+  fecha     DateTime @default(now())
+  tipo      String
+  origen    String
+  severidad String   @default("info")
+  entidad   String?
+  entidadId String?
+  mensaje   String
+  /// JSON con datos adicionales.
+  datos     String   @default("{}")
+
+  @@index([fecha])
+  @@index([tipo, fecha])
+}
+
+/// Órdenes ya ejecutadas, para no repetirlas si llegan duplicadas.
+model SolicitudProcesada {
+  idSolicitud  String   @id
+  ruta         String
+  codigoEstado Int
+  respuesta    String
+  fecha        DateTime @default(now())
+}

@@ -9,3 +9,5 @@ coverage/
 !.vscode/extensions.json
 .DS_Store
 Thumbs.db
+# Cliente de Prisma (se genera con npm install)
+apps/backend/src/generated/

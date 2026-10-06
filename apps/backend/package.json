@@ -4,19 +4,29 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "prisma migrate deploy && prisma db seed",
     "dev": "tsx watch src/servidor.ts",
     "build": "tsup src/servidor.ts --format esm --platform node --target node20 --clean",
+    "prestart": "prisma migrate deploy",
     "start": "node dist/servidor.js",
     "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "db:generar": "prisma generate",
+    "db:migrar": "prisma migrate deploy",
+    "db:nueva-migracion": "prisma migrate dev",
+    "db:seed": "prisma db seed",
+    "db:reiniciar": "prisma migrate reset --force && prisma db seed"
   },
   "devDependencies": {
     "@types/node": "^26.6.4",
+    "prisma": "^7.10.0",
     "tsup": "^8.5.1",
     "tsx": "^4.23.15"
   },
   "dependencies": {
     "@lumiclass/compartido": "^0.1.0",
+    "@prisma/adapter-better-sqlite3": "^7.10.0",
+    "@prisma/client": "^7.10.0",
     "fastify": "^5.12.5",
     "zod": "^4.6.5"
   }

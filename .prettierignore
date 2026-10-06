@@ -4,3 +4,4 @@ coverage
 package-lock.json
 *.db
 diseno
+apps/backend/src/generated

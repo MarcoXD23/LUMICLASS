@@ -49,4 +49,4 @@ Debe distinguirse a simple vista: ocupado/vacío, luces on/off, automático/manu
 9. Pruebas completas y corrección de errores.
 10. Preparación de la presentación: README, guía de demo, guion de pruebas.
 
-Estado actual: Fase 3 completada (estructura inicial, scripts y lint). Pendiente: respuestas de la Fase 1 y capturas en `diseno/`. Siguiente: Fase 4.
+Estado actual: Fase 4 completada (backend, API REST y base SQLite con Prisma). Pendiente: respuestas de la Fase 1 y capturas en `diseno/`. Siguiente: Fase 5.

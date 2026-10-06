@@ -1,17 +1,10 @@
-// Tipos de estado compartidos entre backend y frontend.
-// En la Fase 4 se agregan los esquemas Zod de las entidades.
+// Tipos y esquemas compartidos entre backend y frontend.
+import { z } from 'zod';
 
-export const ESTADOS_LUZ = ['on', 'off', 'desconocido'] as const;
-export type EstadoLuz = (typeof ESTADOS_LUZ)[number];
+// Mensajes de validación en español para toda la aplicación.
+z.config(z.locales.es());
 
-export const MODOS_ZONA = ['automatico', 'manual'] as const;
-export type ModoZona = (typeof MODOS_ZONA)[number];
-
-export const CONEXIONES_SENSOR = ['activo', 'inactivo', 'falla'] as const;
-export type ConexionSensor = (typeof CONEXIONES_SENSOR)[number];
-
-export interface RespuestaSalud {
-  estado: 'ok';
-  driver: 'simulado' | 'real';
-  fecha: string;
-}
+export * from './esquemas/entidades';
+export * from './esquemas/comandos';
+export * from './esquemas/reglas';
+export * from './esquemas/eventos';

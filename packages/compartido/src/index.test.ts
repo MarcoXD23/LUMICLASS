@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CONEXIONES_SENSOR, ESTADOS_LUZ, MODOS_ZONA } from './index';
+import { CONEXIONES, ESTADOS_LUZ, MODOS_ZONA } from './index';
 
 describe('tipos compartidos', () => {
   it('incluye el estado "desconocido" para luces sin confirmación', () => {
@@ -10,7 +10,7 @@ describe('tipos compartidos', () => {
     expect(MODOS_ZONA).toEqual(['automatico', 'manual']);
   });
 
-  it('define los estados de conexión de sensores', () => {
-    expect(CONEXIONES_SENSOR).toEqual(['activo', 'inactivo', 'falla']);
+  it('define los estados de conexión de sensores y actuadores', () => {
+    expect(CONEXIONES).toEqual(['activo', 'inactivo', 'falla']);
   });
 });

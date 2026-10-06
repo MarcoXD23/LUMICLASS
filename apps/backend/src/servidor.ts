@@ -1,5 +1,8 @@
 import { construirApp } from './app';
-import { leerEntorno } from './config/entorno';
+import { leerEntorno, type Entorno } from './config/entorno';
+import { crearBaseDatos } from './db/cliente';
+import type { DriverHardware } from './drivers/driver';
+import { DriverEnMemoria } from './drivers/driverEnMemoria';
 
 function cargarArchivoEnv(): void {
   try {
@@ -9,13 +12,26 @@ function cargarArchivoEnv(): void {
   }
 }
 
+function crearDriver(entorno: Entorno): DriverHardware {
+  if (entorno.DRIVER === 'real') {
+    throw new Error('El driver "real" se implementa en la Fase 8. Usa DRIVER=simulado.');
+  }
+  // Fase 4: driver mínimo. En la Fase 5 se reemplaza por el simulador completo.
+  return new DriverEnMemoria();
+}
+
 async function iniciar(): Promise<void> {
   cargarArchivoEnv();
   const entorno = leerEntorno();
-  const app = construirApp(entorno, { registrar: true });
+  const driver = crearDriver(entorno);
+  const bd = crearBaseDatos(entorno.DATABASE_URL);
+  await driver.iniciar();
+  const app = construirApp({ entorno, bd, driver, registrar: true });
 
   const cerrar = async () => {
     await app.close();
+    await driver.detener();
+    await bd.$disconnect();
     process.exit(0);
   };
   process.on('SIGINT', cerrar);

@@ -25,19 +25,34 @@ npm run dev
 - Frontend: http://localhost:5173
 - API: http://localhost:3000/api/v1/salud
 
-La página debe mostrar **"API: conectada"**. Para cambiar puerto o driver, copia `apps/backend/.env.example` como `apps/backend/.env` (es opcional; sin él se usan los valores por defecto).
+La primera vez, `npm run dev` crea la base de datos SQLite (`apps/backend/prisma/dev.db`) con datos de ejemplo. La página debe mostrar **"API: conectada"**. Para cambiar puerto o driver, copia `apps/backend/.env.example` como `apps/backend/.env` (es opcional; sin él se usan los valores por defecto).
 
 ## Scripts
 
-| Comando             | Qué hace                                                     |
-| ------------------- | ------------------------------------------------------------ |
-| `npm run dev`       | Levanta backend y frontend juntos (Ctrl+C detiene ambos)     |
-| `npm test`          | Ejecuta las pruebas de todos los paquetes                    |
-| `npm run lint`      | Revisa el código con ESLint                                  |
-| `npm run typecheck` | Revisa los tipos de TypeScript                               |
-| `npm run build`     | Compila backend y frontend en `dist/`                        |
-| `npm run format`    | Formatea el código con Prettier                              |
-| `npm run verificar` | Lint + formato + tipos + pruebas + compilación (antes de PR) |
+| Comando                | Qué hace                                                         |
+| ---------------------- | ---------------------------------------------------------------- |
+| `npm run dev`          | Levanta backend y frontend juntos (Ctrl+C detiene ambos)         |
+| `npm test`             | Ejecuta las pruebas de todos los paquetes                        |
+| `npm run lint`         | Revisa el código con ESLint                                      |
+| `npm run typecheck`    | Revisa los tipos de TypeScript                                   |
+| `npm run build`        | Compila backend y frontend en `dist/`                            |
+| `npm run format`       | Formatea el código con Prettier                                  |
+| `npm run db:reiniciar` | Borra la base local y la vuelve a crear con los datos de ejemplo |
+| `npm run verificar`    | Lint + formato + tipos + pruebas + compilación (antes de PR)     |
+
+## API (`/api/v1`)
+
+| Método              | Ruta                                         | Uso                                                  |
+| ------------------- | -------------------------------------------- | ---------------------------------------------------- |
+| GET                 | `/salud`                                     | Estado de la API, base de datos y hardware           |
+| GET                 | `/salon/estado`                              | Todo el dashboard en una llamada                     |
+| GET                 | `/zonas` · `/luces` · `/sensores` (y `/:id`) | Listas y detalle                                     |
+| PATCH               | `/zonas/:id/modo`                            | `{ "modo": "automatico" }` o `"manual"`              |
+| POST                | `/luces/:id/comando` · `/zonas/:id/comando`  | `{ "accion": "encender", "idSolicitud": "abc123…" }` |
+| GET/POST/PUT/DELETE | `/reglas` · `/reglas/:id`                    | Reglas de automatización                             |
+| GET                 | `/eventos?tipo&desde&hasta&pagina&porPagina` | Historial                                            |
+
+Los errores siempre responden `{ "error": { "codigo", "mensaje" } }`. Una orden repetida con el mismo `idSolicitud` no se ejecuta dos veces. Los datos de ejemplo (2 zonas; 1 luz, 1 servo y 1 sensor PIR por zona) son **PROPUESTA** hasta confirmar el hardware.
 
 ## Estructura
 
@@ -52,4 +67,4 @@ diseno/              Referencia de Figma
 
 La arquitectura completa está en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md). Las reglas de trabajo están en [CLAUDE.md](CLAUDE.md).
 
-**Estado:** Fase 3 completada (estructura inicial).
+**Estado:** Fase 4 completada (backend, API y base de datos).
