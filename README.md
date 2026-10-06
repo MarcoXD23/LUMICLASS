@@ -27,6 +27,18 @@ npm run dev
 
 La primera vez, `npm run dev` crea la base de datos SQLite (`apps/backend/prisma/dev.db`) con datos de ejemplo. La página debe mostrar **"API: conectada"**. Para cambiar puerto o driver, copia `apps/backend/.env.example` como `apps/backend/.env` (es opcional; sin él se usan los valores por defecto).
 
+## Pantallas
+
+| Pantalla  | Qué muestra o permite                                                                |
+| --------- | ------------------------------------------------------------------------------------ |
+| Inicio    | Salón ocupado/vacío, luces encendidas, sensores, hardware, alertas y estado por zona |
+| Control   | Encender/apagar cada luz o toda una zona y cambiar entre automático y manual         |
+| Sensores  | Conexión, presencia y última lectura de cada sensor                                  |
+| Reglas    | Crear, editar, activar/desactivar y borrar reglas automáticas                        |
+| Simulador | Forzar presencia, fallas de sensor, respuesta de los servos e interruptor a mano     |
+
+Los datos se actualizan cada 5 s. Si el servidor no responde, la app lo avisa y muestra los últimos datos marcados como desactualizados. El aspecto visual es **PROPUESTA** hasta tener las capturas de Figma en `diseno/`.
+
 ## Scripts
 
 | Comando                | Qué hace                                                         |
@@ -83,4 +95,4 @@ diseno/              Referencia de Figma
 
 La arquitectura completa está en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md). Las reglas de trabajo están en [CLAUDE.md](CLAUDE.md).
 
-**Estado:** Fase 5 completada (simulador y motor de automatización).
+**Estado:** Fase 6 completada (frontend conectado a la API; diseño visual provisional).

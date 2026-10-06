@@ -49,7 +49,7 @@ Debe distinguirse a simple vista: ocupado/vacío, luces on/off, automático/manu
 9. Pruebas completas y corrección de errores.
 10. Preparación de la presentación: README, guía de demo, guion de pruebas.
 
-Estado actual: Fase 5 completada (driver simulado, servicio de presencia, motor de reglas y rutas /sim). Siguiente: Fase 6.
+Estado actual: Fase 6 completada (frontend: Inicio, Control, Sensores, Reglas y Simulador, conectado a la API con actualización cada 5 s). El estilo visual es PROPUESTA: al llegar las capturas a `diseno/` solo se ajustan `estilos/index.css`, `utilidades/estados.ts` y los componentes visuales. Siguiente: Fase 7.
 
 Decisiones confirmadas por el equipo (2026-10-05):
 

@@ -4,6 +4,7 @@
  * Tokens de color de estados (PROPUESTA, docs/ARQUITECTURA.md §8).
  * Siempre se acompañan de ícono y texto; el color solo no basta.
  * Uso en Tailwind: bg-luz-on, text-error, border-ocupado, etc.
+ * Cuando lleguen las capturas de diseno/, se ajustan aquí sin tocar los componentes.
  */
 @theme {
   --color-luz-on: #f5b301;
@@ -12,4 +13,16 @@
   --color-vacio: #2563eb;
   --color-error: #dc2626;
   --color-advertencia: #ea580c;
+  --color-automatico: #7c3aed;
+  --color-manual: #0f766e;
+  --color-fondo: #f8fafc;
+  --color-superficie: #ffffff;
+  --color-borde: #e2e8f0;
+  --color-texto: #0f172a;
+  --color-texto-suave: #475569;
+}
+
+body {
+  background-color: var(--color-fondo);
+  color: var(--color-texto);
 }
