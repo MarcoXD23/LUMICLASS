@@ -52,7 +52,7 @@ La primera vez, `npm run dev` crea la base de datos SQLite (`apps/backend/prisma
 | GET/POST/PUT/DELETE | `/reglas` · `/reglas/:id`                    | Reglas de automatización                             |
 | GET                 | `/eventos?tipo&desde&hasta&pagina&porPagina` | Historial                                            |
 
-Los errores siempre responden `{ "error": { "codigo", "mensaje" } }`. Una orden repetida con el mismo `idSolicitud` no se ejecuta dos veces. Los datos de ejemplo (2 zonas; 1 luz, 1 servo y 1 sensor PIR por zona) son **PROPUESTA** hasta confirmar el hardware.
+Los errores siempre responden `{ "error": { "codigo", "mensaje" } }`. Una orden repetida con el mismo `idSolicitud` no se ejecuta dos veces. Los datos de ejemplo (2 zonas; 1 luz, 1 servo y 1 sensor PIR por zona) están **CONFIRMADOS de forma provisional** hasta conocer el hardware real.
 
 ## Simulador (`DRIVER=simulado`)
 

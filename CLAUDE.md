@@ -49,4 +49,11 @@ Debe distinguirse a simple vista: ocupado/vacío, luces on/off, automático/manu
 9. Pruebas completas y corrección de errores.
 10. Preparación de la presentación: README, guía de demo, guion de pruebas.
 
-Estado actual: Fase 5 completada (driver simulado, servicio de presencia, motor de reglas y rutas /sim). Pendiente: respuestas de la Fase 1 y capturas en `diseno/`. Siguiente: Fase 6.
+Estado actual: Fase 5 completada (driver simulado, servicio de presencia, motor de reglas y rutas /sim). Siguiente: Fase 6.
+
+Decisiones confirmadas por el equipo (2026-10-05):
+
+- Se trabaja en este repositorio (`LUMICLASS\LUMICLASS`); la carpeta padre `LUMICLASS\` queda en desuso.
+- Datos de ejemplo: 2 zonas (Frente y Fondo), con 1 luz, 1 servo y 1 sensor PIR cada una. CONFIRMADO de forma provisional hasta conocer el hardware real.
+
+Pendiente: resto de respuestas de la Fase 1 (hardware, login, entrega, presentación) y capturas en `diseno/`.
