@@ -62,8 +62,8 @@ class EventoController extends Controller
             ->when($filtros['tipo'] ?? null, fn ($q, $valor) => $q->where('tipo', $valor))
             ->when($filtros['origen'] ?? null, fn ($q, $valor) => $q->where('origen', $valor))
             ->when($filtros['severidad'] ?? null, fn ($q, $valor) => $q->where('severidad', $valor))
-            ->when($filtros['desde'] ?? null, fn ($q, $valor) => $q->whereDate('created_at', '>=', $valor))
-            ->when($filtros['hasta'] ?? null, fn ($q, $valor) => $q->whereDate('created_at', '<=', $valor))
+            ->when($request->desdeUtc(), fn ($q, $valor) => $q->where('created_at', '>=', $valor))
+            ->when($request->hastaUtc(), fn ($q, $valor) => $q->where('created_at', '<=', $valor))
             ->orderByDesc('id');
     }
 }

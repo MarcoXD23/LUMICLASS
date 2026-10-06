@@ -43,7 +43,9 @@ php artisan serve --port=8001
 
 Es solo para desarrollo y presentación: cámbiala si el sistema se publica. Cada cuenta nueva recibe un salón de ejemplo (2 zonas, 4 luces con su servo, 2 sensores PIR y 2 reglas; cantidades **PROPUESTA**). Los endpoints y protecciones están en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md#5-endpoints-apiv1-confirmado).
 
-Si ya tenías una base de una versión anterior, recréala con `php artisan migrate:fresh --seed` (borra los datos locales).
+Si ya tenías una base de una versión anterior, recréala con `php artisan migrate:fresh --seed` (**borra los datos** de la base configurada en `.env`: revisa `DB_DATABASE` antes).
+
+**Base de datos:** por defecto SQLite (un archivo, nada que instalar). Para usar **MySQL de WAMP**, crea la base `lumiclass` (utf8mb4) y en `.env` usa el bloque MySQL comentado de `.env.example` (puerto 3306 o 3308 según tu WAMP). Laravel crea las tablas con InnoDB (`config/database.php`), necesario porque WAMP trae MyISAM por defecto.
 
 Se usa el puerto **8001** y la cookie de sesión **`lumiclass_session`** para que LUMICLASS pueda correr al mismo tiempo que otro proyecto Laravel (que normalmente usa el 8000 y la cookie `laravel_session`) sin que se mezclen las sesiones.
 
@@ -54,7 +56,9 @@ Se usa el puerto **8001** y la cookie de sesión **`lumiclass_session`** para qu
 | `php artisan serve --port=8001` | Levanta la aplicación en http://localhost:8001      |
 | `npm run dev`                   | Compila CSS/JS en caliente con Vite (en otra consola) |
 | `npm run build`                 | Compila CSS/JS para producción                      |
-| `php artisan test`              | Ejecuta las pruebas                                 |
+| `php artisan test`              | Pruebas del backend (no toca tu base de datos)      |
+| `npm run prueba:js`             | Pruebas del JavaScript                              |
+| `npm run prueba:navegador`      | Recorrido completo en Edge/Chrome (servidor encendido) |
 | `vendor\bin\pint`               | Formatea el código PHP (`--test` solo revisa)       |
 | `php artisan migrate`           | Aplica las migraciones de la base de datos          |
 | `php artisan migrate:fresh --seed` | Recrea la base local desde cero con datos de ejemplo |
@@ -105,6 +109,10 @@ Invoke-RestMethod -Method Post "$api/auth/logout" -Headers $json
 
 Para la demo conviene acortar las esperas en `.env`: `LUMICLASS_FACTOR_TIEMPO_REGLAS=0.1` hace que los 300 s pasen a 30 s. El sistema avanza solo mientras se consulte `/salon/estado` (o con `php artisan schedule:work`).
 
+## Pruebas
+
+Qué cubre cada prueba y cómo correrlas (también contra MySQL): [docs/PRUEBAS.md](docs/PRUEBAS.md). En GitHub corren solas en cada push (`.github/workflows/pruebas.yml`).
+
 ## Estructura
 
 ```
@@ -124,4 +132,4 @@ Las reglas de trabajo están en [CLAUDE.md](CLAUDE.md).
 
 LUMICLASS está construido con [Laravel](https://laravel.com), un framework web de PHP. Documentación oficial: https://laravel.com/docs. Laravel es software de código abierto con licencia [MIT](https://opensource.org/licenses/MIT).
 
-**Estado:** Fase 7 completada (estadísticas, historial en CSV, tiempo real con reintentos y manejo de errores), con pruebas.
+**Estado:** Fase 9 completada (pruebas de backend, JavaScript y navegador; funciona con SQLite y MySQL). La Fase 8 (hardware real) está pendiente de confirmar los sensores.

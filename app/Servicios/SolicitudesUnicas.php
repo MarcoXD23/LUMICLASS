@@ -18,7 +18,7 @@ class SolicitudesUnicas
     /** @param  Closure(): JsonResponse  $accion */
     public function ejecutarUnaVez(Request $request, string $idSolicitud, Closure $accion): JsonResponse
     {
-        $ruta = $request->method().' '.$request->path();
+        $ruta = $this->huella($request);
         $userId = $request->user()?->id;
         $buscar = fn () => SolicitudProcesada::query()->where('user_id', $userId)->where('id_solicitud', $idSolicitud)->first();
 
@@ -47,12 +47,24 @@ class SolicitudesUnicas
         return $respuesta;
     }
 
+    /**
+     * "POST api/v1/luces/1/comando#<sha1 del cuerpo>": el mismo id solo se acepta como repetición
+     * si es la MISMA orden. Con otro cuerpo (p. ej. "apagar" en vez de "encender") se rechaza.
+     */
+    private function huella(Request $request): string
+    {
+        $cuerpo = $request->except('id_solicitud');
+        ksort($cuerpo);
+
+        return $request->method().' '.$request->path().'#'.sha1(json_encode($cuerpo));
+    }
+
     private function repetir(SolicitudProcesada $previa, string $ruta): JsonResponse
     {
         if ($previa->ruta !== $ruta) {
             return RespuestaError::json(
                 'id_solicitud_reutilizado',
-                'Ese id_solicitud ya se usó para otra orden. Genera uno nuevo.',
+                'Ese id_solicitud ya se usó para otra orden distinta. Genera uno nuevo.',
                 409,
             );
         }

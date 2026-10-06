@@ -43,6 +43,10 @@ export function historial(salonId) {
                     parametros.set(clave, valor);
                 }
             }
+            // "Desde" y "hasta" son días de la hora local de quien mira, no del servidor (UTC).
+            if (this.filtros.desde || this.filtros.hasta) {
+                parametros.set('zona_horaria', Intl.DateTimeFormat().resolvedOptions().timeZone);
+            }
 
             return parametros;
         },

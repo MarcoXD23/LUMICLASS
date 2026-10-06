@@ -136,13 +136,14 @@ class ServicioLuces
 
         $this->validarActuador($luz);
 
-        if ($this->yaEstaEn($luz, $objetivo)) {
-            return new ResultadoComando($luz, null, "La luz \"{$luz->nombre}\" ya está {$objetivo->value}; no se movió el servo.");
-        }
-
         // Una orden manual sobre una zona automática la pasa a manual (si no, una regla la revertiría).
+        // Va antes de "ya está así": pulsar "Encender" con la luz encendida también significa "déjala encendida".
         if ($origen === OrigenEvento::Usuario && $luz->zona->modo === ModoZona::Automatico) {
             $this->zonas->cambiarModo($luz->zona, ModoZona::Manual, $origen, 'Motivo: orden manual sobre una luz.');
+        }
+
+        if ($this->yaEstaEn($luz, $objetivo)) {
+            return new ResultadoComando($luz, null, "La luz \"{$luz->nombre}\" ya está {$objetivo->value}; no se movió el servo.");
         }
 
         $luz->estado_deseado = $objetivo;

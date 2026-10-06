@@ -2,6 +2,46 @@ import { api } from '../api';
 import { avisar } from '../avisos';
 import { describirCondicion, etiqueta } from '../formato';
 
+/** Formulario de una regla a partir de la regla guardada. Recuerda los segundos exactos de la duración. */
+export function formularioDesdeRegla(regla) {
+    const segundos = regla.condicion.duracion_segundos ?? 0;
+
+    return {
+        nombre: regla.nombre,
+        zona_id: regla.zona_id ?? '',
+        presencia: regla.condicion.presencia,
+        minutos: Math.round(segundos / 60),
+        segundosOriginales: segundos,
+        accion: regla.accion.accion,
+        prioridad: regla.prioridad,
+        activa: regla.activa,
+    };
+}
+
+/**
+ * Cuerpo para la API. Si no se tocó la duración, se envían los segundos originales:
+ * así editar el nombre de una regla de 90 s no la convierte en una de 120 s (ni una de 20 s en 0 s).
+ */
+export function cuerpoRegla(f) {
+    const minutos = Number(f.minutos);
+    const sinTocar = f.segundosOriginales !== undefined && minutos === Math.round(f.segundosOriginales / 60);
+    const segundos = sinTocar ? f.segundosOriginales : minutos * 60;
+
+    const condicion = { presencia: f.presencia };
+    if (segundos > 0) {
+        condicion.duracion_segundos = segundos;
+    }
+
+    return {
+        nombre: f.nombre,
+        activa: Boolean(f.activa),
+        prioridad: Number(f.prioridad),
+        zona_id: f.zona_id === '' ? null : Number(f.zona_id),
+        condicion,
+        accion: { accion: f.accion },
+    };
+}
+
 const FORMULARIO_VACIO = { nombre: '', zona_id: '', presencia: 'ocupado', minutos: 0, accion: 'encender', prioridad: 100, activa: true };
 
 /** Reglas de automatización del salón: listar, crear, editar, activar/desactivar y borrar. */
@@ -55,34 +95,12 @@ export function reglas(salonId) {
 
         abrirEdicion(regla) {
             this.editandoId = regla.id;
-            this.formulario = {
-                nombre: regla.nombre,
-                zona_id: regla.zona_id ?? '',
-                presencia: regla.condicion.presencia,
-                minutos: Math.round((regla.condicion.duracion_segundos ?? 0) / 60),
-                accion: regla.accion.accion,
-                prioridad: regla.prioridad,
-                activa: regla.activa,
-            };
+            this.formulario = formularioDesdeRegla(regla);
             this.errores = {};
             this.formularioAbierto = true;
         },
 
-        cuerpo(f) {
-            const condicion = { presencia: f.presencia };
-            if (Number(f.minutos) > 0) {
-                condicion.duracion_segundos = Number(f.minutos) * 60;
-            }
-
-            return {
-                nombre: f.nombre,
-                activa: Boolean(f.activa),
-                prioridad: Number(f.prioridad),
-                zona_id: f.zona_id === '' ? null : Number(f.zona_id),
-                condicion,
-                accion: { accion: f.accion },
-            };
-        },
+        cuerpo: cuerpoRegla,
 
         async guardar() {
             this.guardando = true;
@@ -106,20 +124,7 @@ export function reglas(salonId) {
         },
 
         async alternar(regla) {
-            const f = {
-                nombre: regla.nombre,
-                zona_id: regla.zona_id ?? '',
-                presencia: regla.condicion.presencia,
-                minutos: (regla.condicion.duracion_segundos ?? 0) / 60,
-                accion: regla.accion.accion,
-                prioridad: regla.prioridad,
-                activa: !regla.activa,
-            };
-            const cuerpo = this.cuerpo(f);
-            // Conserva la duración exacta en segundos (no redondear a minutos).
-            if (regla.condicion.duracion_segundos) {
-                cuerpo.condicion.duracion_segundos = regla.condicion.duracion_segundos;
-            }
+            const cuerpo = cuerpoRegla({ ...formularioDesdeRegla(regla), activa: !regla.activa });
 
             try {
                 await api('PUT', `/reglas/${regla.id}`, cuerpo);

@@ -162,6 +162,23 @@ class MotorReglasTest extends TestCase
         $this->assertSame(EstadoLuz::Apagada, $luz->fresh()->estado_real);
     }
 
+    public function test_pedir_encender_una_luz_ya_encendida_evita_que_la_regla_la_apague(): void
+    {
+        $this->presencia(true);
+        $this->presencia(false);
+        $luz = Luz::orderBy('id')->first();
+
+        // El salón quedó vacío pero el usuario quiere la luz encendida: aunque ya lo está, su orden cuenta.
+        $this->postJson("/api/v1/luces/{$luz->id}/comando", ['accion' => 'encender', 'id_solicitud' => (string) Str::uuid()])
+            ->assertOk()
+            ->assertJsonPath('resultado', 'sin_cambio');
+
+        $this->travel(301)->seconds();
+        $this->tick();
+
+        $this->assertSame(EstadoLuz::Encendida, $luz->fresh()->estado_real);
+    }
+
     public function test_interruptor_manual_en_zona_automatica_se_corrige_en_el_siguiente_tick(): void
     {
         $this->presencia(true);

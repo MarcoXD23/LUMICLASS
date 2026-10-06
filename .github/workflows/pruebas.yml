@@ -1,0 +1,47 @@
+# Corre todas las pruebas de LUMICLASS en GitHub cada vez que se sube código o se abre un PR.
+# (El recorrido en navegador no corre aquí: necesita el servidor encendido; ver docs/PRUEBAS.md.)
+name: Pruebas
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Dependencias
+        run: |
+          composer install --no-interaction --prefer-dist --no-progress
+          npm ci
+
+      - name: Preparar .env
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Estilo PHP (Pint)
+        run: vendor/bin/pint --test
+
+      - name: Compilar la interfaz
+        run: npm run build
+
+      - name: Pruebas PHP
+        run: php artisan test
+
+      - name: Pruebas JavaScript
+        run: npm run prueba:js

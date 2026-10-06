@@ -32,3 +32,6 @@ Thumbs.db
 
 # Copia local anidada del repositorio (no versionar)
 /LUMICLASS/
+
+# Capturas del recorrido en navegador (tests/navegador)
+/tests/navegador/capturas/

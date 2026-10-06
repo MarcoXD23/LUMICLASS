@@ -81,7 +81,8 @@ class ComandoLucesTest extends TestCase
         $primera = $this->ordenar($luz, 'encender', $id)->assertOk();
         $segunda = $this->ordenar($luz, 'encender', $id)->assertOk()->assertHeader('X-Solicitud-Repetida', 'true');
 
-        $this->assertSame($primera->json(), $segunda->json());
+        // Mismo contenido (assertEquals: MySQL puede guardar las claves del JSON en otro orden).
+        $this->assertEquals($primera->json(), $segunda->json());
         $this->assertSame(1, Evento::where('tipo', 'luz.comando')->count());
     }
 

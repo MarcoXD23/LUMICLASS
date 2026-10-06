@@ -41,10 +41,11 @@ class EventosYErroresTest extends TestCase
             $this->registrar(TipoEvento::LuzComando);
         }
 
+        // El más reciente es el de id mayor (en MySQL los ids no vuelven a empezar en 1 entre pruebas).
         $this->getJson($this->eventos('?por_pagina=2'))
             ->assertOk()
             ->assertJsonCount(2, 'data')
-            ->assertJsonPath('data.0.id', 3)
+            ->assertJsonPath('data.0.id', $this->salon->eventos()->max('id'))
             ->assertJsonPath('meta.total', 3);
     }
 
@@ -84,6 +85,19 @@ class EventosYErroresTest extends TestCase
         $this->iniciarSesion();
 
         $this->getJson("/api/v1/salones/{$this->salon->id}/eventos.csv")->assertNotFound();
+    }
+
+    public function test_las_fechas_del_filtro_son_dias_de_la_hora_local(): void
+    {
+        // 03:00 UTC del 6 = 22:00 del 5 en Bogotá (UTC-5).
+        Carbon::setTestNow('2026-10-06 03:00:00');
+        $this->registrar(TipoEvento::LuzComando);
+        Carbon::setTestNow();
+
+        $this->getJson($this->eventos('?desde=2026-10-05&hasta=2026-10-05&zona_horaria=America/Bogota'))->assertJsonCount(1, 'data');
+        $this->getJson($this->eventos('?desde=2026-10-06&hasta=2026-10-06&zona_horaria=America/Bogota'))->assertJsonCount(0, 'data');
+        // Sin zona horaria se usa la del servidor (UTC): cae el día 6.
+        $this->getJson($this->eventos('?desde=2026-10-06&hasta=2026-10-06'))->assertJsonCount(1, 'data');
     }
 
     public function test_filtros_invalidos_responden_400(): void
