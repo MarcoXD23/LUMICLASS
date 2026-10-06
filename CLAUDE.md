@@ -3,6 +3,7 @@
 Sistema inteligente de control y monitoreo de iluminación de un salón de clases.
 Proyecto universitario de Camilo, Marcos y Sofía. Aplicación web (frontend + backend + API + base de datos)
 que usa sensores de presencia y servomotores. Funciona primero con hardware simulado y luego con el real.
+Debe sentirse como una app real, responsive (PC, tablet, celular) y compatible con Windows.
 
 ## Reglas fijas (valen en todas las fases)
 
@@ -12,15 +13,30 @@ que usa sensores de presencia y servomotores. Funciona primero con hardware simu
 4. Explicar cada decisión importante en máximo 3 líneas: qué, por qué y cómo probarla. Son estudiantes, pero quieren avanzar.
 5. Código modular, nombres claros, componentes reutilizables, nada en un solo archivo. Interfaz en español, mobile-first, responsive.
 6. Validar y no romperse ante: sensor o actuador desconectado, API caída, datos inválidos, solicitudes duplicadas, estados imposibles.
-7. Al cerrar cada fase: ejecutar pruebas, compilación y revisión de errores; corregir y volver a probar. Resumir en máximo 10 líneas: qué se hizo, archivos creados/modificados, cómo probarlo, qué falta.
+7. Al cerrar cada fase: ejecutar pruebas, compilación y revisión de errores (incluidos navegador y endpoints); corregir y volver a probar. Resumir en máximo 10 líneas: qué se hizo, archivos creados/modificados, cómo probarlo, qué falta, comandos Git y rama.
 8. Git: ramas por fase o funcionalidad (`feature/...`). Indicar los comandos y la rama sugerida. NO hacer push ni comandos destructivos sin preguntar.
 9. Windows debe ser plataforma soportada; instalación en pocos comandos.
 10. Seguridad eléctrica: los servos solo accionan el interruptor mecánicamente, nunca se conectan a la corriente de red. Recordarlo en la documentación.
+11. Borrado lógico: nunca se elimina información. "Eliminar" = marcar como inactivo. Si un dato se reemplaza, la versión anterior queda inactiva con fecha y autor. Las consultas normales muestran solo lo activo; el historial puede ver lo inactivo. Sin DELETE en el código de la aplicación.
+
+## Autenticación (obligatoria)
+
+- Registro abierto (queda como rol _usuario_), inicio de sesión, cierre de sesión y recuperación de contraseña. Al iniciar sesión se entra al dashboard.
+- Usuarios y sesiones se guardan en la base de datos del servidor, nunca solo en el navegador: Ctrl+F5 o limpiar datos no borra nada.
+- Contraseñas con hash (nunca en texto plano), validación de datos, rutas protegidas (API, tiempo real y pantallas) y errores claros en español.
+- Sesión de 8 h, sin "recordarme" (PC compartido del salón). PROPUESTA aceptada por el equipo.
+- Recuperación: enlace con token de un solo uso que vence en 30 min; correo simulado (consola/pantalla) mientras no haya SMTP real. Preguntar antes de configurar correo real. CONFIRMADO.
+- Los inicios de sesión quedan en el historial.
+
+## Roles (PROPUESTA aceptada; confirmar con Juan David)
+
+- **Admin:** la cuenta admin nunca se desactiva ni se reemplaza (siempre existe al menos una). Solo el admin desactiva o reemplaza datos, crea/edita/desactiva reglas, configura zonas, luces y sensores, y gestiona usuarios. El primer admin se crea con los datos iniciales; su contraseña se define en `.env`, nunca en el código.
+- **Usuario (docente):** ve todo, enciende/apaga luces, cambia automático/manual y usa el simulador.
 
 ## Diseño
 
-La referencia está en la carpeta `diseno/` (código exportado o capturas de Figma). Reutilizar estructura, jerarquía, tarjetas, navegación y proporciones, pero cambiar por completo el contenido a iluminación de un salón. No copiar textos ni imágenes de meditación. Si `diseno/` está vacía, pedir las capturas necesarias; no adivinar.
-Debe distinguirse a simple vista: ocupado/vacío, luces on/off, automático/manual, errores, sensores activos/inactivos.
+Referencia: Figma Make "Meditation app design" (requiere sesión; no accesible sin el conector de Figma autorizado) o la carpeta `diseno/` (código exportado o capturas). Reutilizar estructura, jerarquía, tarjetas, navegación, proporciones y estilo, pero cambiar por completo el contenido a iluminación de un salón. Incluir login, registro y recuperación con el mismo estilo. No copiar textos ni imágenes de meditación. Si no hay acceso ni capturas, pedirlas; no adivinar.
+Debe distinguirse a simple vista: ocupado/vacío, luces on/off, automático/manual, errores, sensores activos/inactivos. Sin abusar de animaciones.
 
 ## Funciones
 
@@ -28,32 +44,49 @@ Debe distinguirse a simple vista: ocupado/vacío, luces on/off, automático/manu
 - Control de luces individual o por zona: encender, apagar, cambiar modo.
 - Sensores: estado, última lectura, presencia, datos relevantes.
 - Automatización por reglas editables (ocupado → encender y vacío → apagar es solo la primera regla).
-- Historial: cambios de estado, encendidos, apagados, presencia, modo, errores.
-- Tiempo real: elegir entre WebSocket, SSE, MQTT o polling según estabilidad y facilidad para presentar.
+- Historial: cambios de estado, encendidos, apagados, presencia, modo, errores e inicios de sesión.
+- Estadísticas cuando sea viable. Tiempo real: SSE con polling de respaldo (ver `docs/ARQUITECTURA.md`).
 
 ## Hardware y simulación
 
 - El backend usa una interfaz de "driver" para sensores y actuadores, con dos implementaciones: simulada y real, elegidas por configuración.
 - La simulación permite forzar salón ocupado/vacío, luces on/off, fallas de sensor y respuesta del actuador, y probar el modo automático.
+- No inventar componentes: preguntar modelo de sensor, microcontrolador, servos, cantidad de luces/zonas, pines, protocolo y voltajes.
 
 ## Fases
 
-1. Análisis: objetivo, diseño de referencia, qué se puede reutilizar y lista ÚNICA de preguntas (hardware, cantidad de luces/zonas, login, fecha de entrega, forma de presentación). Sin código.
-2. Tecnologías y arquitectura: stack justificado, estructura de carpetas, entidades, endpoints, tiempo real, simulación e integración con hardware real. Sin código.
-3. Estructura inicial del proyecto y configuración (git, scripts, lint).
-4. Backend, API y base de datos con migraciones y seeds mínimos, con pruebas.
-5. Simulador de sensores y actuadores + motor de automatización, con pruebas.
-6. Frontend adaptado de `diseno/`, conectado a la API con datos del simulador.
-7. Tiempo real, historial, estadísticas y manejo de errores.
-8. Capa de integración para hardware real (solo con componentes confirmados).
-9. Pruebas completas y corrección de errores.
-10. Preparación de la presentación: README, guía de demo, guion de pruebas.
+1. Análisis: requisitos, diseño de referencia, qué se reutiliza y lista ÚNICA de preguntas. Sin código.
+2. Arquitectura y tecnologías: stack justificado, carpetas, entidades/tablas (con borrado lógico), endpoints, tiempo real, simulación e integración con hardware. Sin código.
+3. Estructura inicial del proyecto y configuración (git, scripts, lint, base de datos).
+4. Autenticación completa: registro, login, recuperación, sesión y entrada al dashboard, con pruebas.
+5. Backend, API y modelos del salón (luces, sensores, actuadores, eventos) con borrado lógico y pruebas.
+6. Simulador de sensores y actuadores + motor de automatización, con pruebas.
+7. Frontend adaptado del diseño, conectado a la API con datos del simulador.
+8. Tiempo real, historial, estadísticas y manejo de errores.
+9. Integración con hardware real (solo componentes confirmados).
+10. Pruebas completas, corrección de errores y preparación de la presentación (README, guía de demo, guion de pruebas).
 
-Estado actual: Fase 7 completada (SSE en `/api/v1/tiempo-real`, historial con filtros, estadísticas desde los eventos, ErrorBoundary y limpieza automática de eventos). El estilo visual sigue siendo PROPUESTA hasta tener `diseno/`. Siguiente: Fase 8 (requiere hardware confirmado).
+## Estado actual (2026-10-06)
 
-Decisiones confirmadas por el equipo (2026-10-05):
+| Fase                      | Estado                                                                                                                        |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| 1 Análisis                | Completada (versión ampliada)                                                                                                 |
+| 2 Arquitectura            | Hecha; falta agregar autenticación, roles y borrado lógico a `docs/ARQUITECTURA.md`                                           |
+| 3 Estructura              | Completada                                                                                                                    |
+| 4 Autenticación           | **Pendiente**                                                                                                                 |
+| 5 Backend del salón       | Hecho; falta adaptarlo al borrado lógico (hoy `DELETE /reglas`, `PUT /reglas` sobrescribe y la limpieza diaria borra eventos) |
+| 6 Simulador y reglas      | Completada                                                                                                                    |
+| 7 Frontend                | Lógica completa; estilo visual PROPUESTA hasta tener el diseño                                                                |
+| 8 Tiempo real e historial | Completada; falta registrar inicios de sesión                                                                                 |
+| 9 Hardware real           | En pausa hasta tener el hardware                                                                                              |
+| 10 Pruebas y presentación | Pendiente                                                                                                                     |
 
-- Se trabaja en este repositorio (`LUMICLASS\LUMICLASS`); la carpeta padre `LUMICLASS\` queda en desuso.
+## Decisiones del equipo
+
+- Se trabaja en este repositorio (`LUMICLASS\LUMICLASS`); la carpeta padre `LUMICLASS\` queda en desuso. CONFIRMADO.
 - Datos de ejemplo: 2 zonas (Frente y Fondo), con 1 luz, 1 servo y 1 sensor PIR cada una. CONFIRMADO de forma provisional hasta conocer el hardware real.
+- Hardware (placa, sensor, servos): aún no disponible; por ahora la app funciona con el simulador. CONFIRMADO.
+- Fecha de entrega: 2026-10-06. CONFIRMADO.
+- Borrado lógico: aplica a datos de configuración (usuarios, reglas, zonas, luces, sensores, servos) con versiones; los cambios de estado quedan como eventos que nunca se borran. Sin limpieza de eventos antiguos; órdenes duplicadas y tokens vencidos se marcan como vencidos. PROPUESTA.
 
-Pendiente: resto de respuestas de la Fase 1 (hardware, login, entrega, presentación) y capturas en `diseno/`.
+Pendiente: forma de presentación (en vivo / simulador / video, WiFi, celular), capturas o acceso al diseño en Figma.
