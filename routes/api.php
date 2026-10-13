@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ConfiguracionController;
+use App\Http\Controllers\Api\CuentaController;
 use App\Http\Controllers\Api\EstadisticaController;
 use App\Http\Controllers\Api\EventoController;
 use App\Http\Controllers\Api\LuzController;
@@ -45,11 +46,23 @@ Route::prefix('v1')->name('api.')->group(function () {
         Route::post('auth/token', [AuthController::class, 'token']);
         Route::post('auth/olvide', [AuthController::class, 'olvide']);
         Route::post('auth/restablecer', [AuthController::class, 'restablecer']);
+        // Formas 2 y 3: código de 6 dígitos al correo principal o al alternativo verificado.
+        Route::post('auth/codigo', [AuthController::class, 'enviarCodigo']);
+        Route::post('auth/codigo/restablecer', [AuthController::class, 'restablecerConCodigo']);
     });
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('auth/logout', [AuthController::class, 'logout']);
         Route::get('auth/yo', [AuthController::class, 'yo']);
+
+        // Seguridad de mi cuenta: correo alternativo para recuperar la contraseña.
+        Route::controller(CuentaController::class)->group(function () {
+            Route::get('cuenta/seguridad', 'seguridad');
+            Route::post('cuenta/alternativo', 'guardarAlternativo');
+            Route::post('cuenta/alternativo/reenviar', 'reenviarCodigo');
+            Route::post('cuenta/alternativo/verificar', 'verificarAlternativo');
+            Route::delete('cuenta/alternativo', 'quitarAlternativo');
+        });
 
         Route::apiResource('salones', SalonController::class)->parameters(['salones' => 'salon']);
         Route::get('salones/{salon}/estado', [SalonController::class, 'estado']);

@@ -34,6 +34,16 @@ class PaginaController extends Controller
         return view('auth.restablecer', ['token' => $token, 'email' => (string) $request->query('email', '')]);
     }
 
+    public function recuperarConCodigo(Request $request): View
+    {
+        return view('auth.codigo', ['via' => $request->query('via') === 'alternativo' ? 'alternativo' : 'correo']);
+    }
+
+    public function seguridad(): View
+    {
+        return view('cuenta.seguridad');
+    }
+
     public function salones(): View
     {
         return view('salones.index');

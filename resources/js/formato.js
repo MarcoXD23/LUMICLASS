@@ -25,6 +25,8 @@ export const etiquetas = {
         'simulador.reinicio': 'Simulador reiniciado',
         'demo.preparada': 'Datos de ejemplo cargados',
         configuracion: 'Cambio de configuración',
+        'cuenta.contrasena': 'Contraseña cambiada',
+        'cuenta.alternativo': 'Correo alternativo',
     },
 };
 

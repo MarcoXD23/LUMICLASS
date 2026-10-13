@@ -70,7 +70,8 @@ salones** y puede hacer todo, pero **solo** sobre lo suyo. Un único rol (sin ad
 
 | Tabla                    | Campos clave                                                                                                   |
 | ------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| `users`                  | id, name, email (único, en minúsculas), password (cifrada)                                                     |
+| `users`                  | id, name, email (único, en minúsculas), password (cifrada), correo_alternativo (único, solo verificado), correo_alternativo_verificado_en, correo_alternativo_pendiente |
+| `codigos_verificacion`   | user_id + proposito (únicos juntos: pedir otro anula el anterior), destino, codigo_hash (el código de 6 dígitos con hash), expira_en (10 min) |
 | `salones`                | id, user_id (dueño), nombre (único por cuenta). La ocupación se **calcula** a partir de los sensores.         |
 | `zonas`                  | id, salon_id, nombre, modo (`automatico` / `manual`)                                                           |
 | `luces`                  | id, zona_id, actuador_id (único), nombre, estado_deseado (`encendida`/`apagada`), estado_real (+ `desconocida`) |
@@ -104,16 +105,25 @@ salones** y puede hacer todo, pero **solo** sobre lo suyo. Un único rol (sin ad
 | POST   | `/auth/token`     | `{ email, password, nombre_dispositivo? }` → token para scripts y placa                    |
 | POST   | `/auth/olvide`    | `{ email }` → envía el enlace para crear contraseña nueva. Respuesta **siempre igual** (no revela si el correo existe) |
 | POST   | `/auth/restablecer` | `{ token, email, password, password_confirmation }` → cambia la contraseña, revoca tokens, cierra otras sesiones e ingresa |
+| POST   | `/auth/codigo`    | `{ email, via: correo\|alternativo }` → envía un código de 6 dígitos al correo principal o al alternativo verificado. Respuesta **siempre igual** |
+| POST   | `/auth/codigo/restablecer` | `{ email, via, codigo, password, password_confirmation }` → igual que `/auth/restablecer`, pero con el código |
 
 Las rutas de `/auth` sin sesión admiten 5 intentos por minuto (`429 demasiados_intentos`). El enlace de recuperación
 vence a los 60 min, sirve una sola vez y no se reenvía más de una vez por minuto al mismo correo (`config/auth.php`).
 Un enlace inválido, vencido o de otra cuenta responde siempre `400 enlace_invalido` con el mismo mensaje.
+Códigos (formas 2 y 3, `app/Servicios/CodigosVerificacion.php`): vencen a los 10 min, sirven una vez, se guardan con hash,
+máximo 3 envíos por hora por cuenta y 5 intentos fallidos (luego `429 demasiados_intentos_codigo` por 15 min). Un código
+malo, vencido o de otra forma responde `400 codigo_invalido`. Cada cambio de contraseña queda como evento `cuenta.contrasena`
+con la forma usada (`app/Servicios/CambioDeContrasena.php`).
 
 **Con sesión o token** (sin ellos: `401 no_autenticado`):
 
 | Método              | Ruta                                              | Uso                                                       |
 | ------------------- | ------------------------------------------------- | --------------------------------------------------------- |
 | POST · GET          | `/auth/logout` · `/auth/yo`                       | Cerrar sesión (o revocar el token) · datos de la cuenta   |
+| GET                 | `/cuenta/seguridad`                               | Correo principal, alternativo enmascarado (`ma***@outlook.com`), pendiente y actividad de la cuenta |
+| POST · DELETE       | `/cuenta/alternativo`                             | Agregar o cambiar `{ correo_alternativo, password_actual }` (envía código) · quitar `{ password_actual }` |
+| POST                | `/cuenta/alternativo/verificar` · `/reenviar`     | Activar con `{ codigo }` · enviar otro código. Cada paso queda como evento `cuenta.alternativo` |
 | GET · POST          | `/salones`                                        | Mis salones · crear `{ nombre, zonas?: 1..10, luces_por_zona?: 1..10 }` (máx. 20 por cuenta) |
 | GET · PATCH · DELETE | `/salones/{id}`                                  | Ver · renombrar `{ nombre }` · borrar con todo lo suyo    |
 | POST · PATCH · DELETE | `/salones/{id}/zonas` · `/zonas/{id}`           | **Configurar:** crear zona `{ nombre, luces?: 0..10, sensores?: 0..3 }` · renombrar · quitar (no la última; borra sus luces, servos, sensores y reglas propias) |
@@ -248,6 +258,8 @@ solo entregan la estructura; cada pantalla pide sus datos a `/api/v1` con la coo
 | Ruta web                         | Pantalla                                                                  |
 | -------------------------------- | ------------------------------------------------------------------------- |
 | `/ingresar` · `/registro`        | Cuentas (sin sesión). Con sesión llevan a `/salones`.                     |
+| `/olvide` · `/recuperar/codigo`  | Recuperar contraseña: 3 opciones; forma 1 (enlace) y formas 2 y 3 (código en 6 casillas) |
+| `/cuenta/seguridad`              | **Seguridad de mi cuenta**: correo alternativo y actividad de la cuenta   |
 | `/salones`                       | Mis salones: crear (zonas y luces por zona), renombrar, borrar            |
 | `/salones/{id}`                  | **Inicio**: ocupación, luces encendidas, sensores activos, alertas, zonas |
 | `/salones/{id}/control`          | **Control**: cada luz y cada zona, automático/manual                      |
@@ -262,7 +274,7 @@ Navegación: barra inferior en celular y barra lateral en escritorio.
 
 **Componentes reutilizables** (`resources/views/components/`): `icono` (SVG en línea, sin internet),
 `insignia-luz`, `insignia-ocupacion`, `insignia-modo`, `insignia-conexion`, `campo`, `navegacion`, `avisos`,
-`aviso-conexion`. Un componente Alpine por pantalla en `resources/js/paginas/`.
+`aviso-conexion`, `casillas-codigo`, `opciones-recuperacion`, `aviso-seguridad`. Un componente Alpine por pantalla en `resources/js/paginas/`.
 
 | Estado              | Color    | Además                        |
 | ------------------- | -------- | ----------------------------- |

@@ -207,7 +207,7 @@ await etapa('Registro de una cuenta nueva y salir', async () => {
     await r.goto(`${BASE}/registro`);
     await r.getByLabel('Nombre').fill('Cuenta de prueba');
     cuentaNueva = `prueba${Date.now()}@ejemplo.com`;
-    await r.getByLabel('Correo').fill(cuentaNueva);
+    await r.getByLabel('Correo', { exact: true }).fill(cuentaNueva);
     await r.getByLabel('Contraseña (mínimo 8 caracteres)').fill('secreta123');
     await r.getByLabel('Repite la contraseña').fill('secreta123');
     await r.getByRole('button', { name: 'Crear cuenta' }).click();
@@ -241,6 +241,94 @@ await etapa('Recuperar contraseña (con la cuenta nueva) y entrar con la nueva',
     await r.getByRole('button', { name: 'Guardar contraseña' }).click();
     await r.waitForURL('**/salones', { timeout: 5000 });
     await revisarCelular(r, 'recuperar-contrasena');
+});
+
+/** Último código de 6 dígitos enviado a `correo` según el log (MAIL_MAILER=log); null si no hay log. */
+function codigoDelLog(correo) {
+    const log = existsSync(LOG) ? readFileSync(LOG, 'utf8') : '';
+    const partes = log.split(`To: ${correo}`);
+
+    return partes.length > 1 ? (partes.at(-1).match(/^\s*(\d{6})\s*$/m)?.[1] ?? null) : null;
+}
+
+/** Escribe el código dígito a dígito en las 6 casillas (como en un celular). */
+async function escribirCodigo(pagina, codigo) {
+    await pagina.getByLabel('Dígito 1 de 6').click();
+    await pagina.keyboard.type(codigo, { delay: 40 });
+}
+
+let contextoCodigo = null;
+const correoRespaldo = `respaldo${Date.now()}@ejemplo.com`;
+
+await etapa('Forma 2: código de 6 dígitos por correo (6 casillas)', async () => {
+    // Las rutas de cuentas admiten 5 peticiones por minuto por equipo (anti fuerza bruta) y los pasos
+    // anteriores ya usaron varias: se espera un minuto para que los pasos 16 a 18 quepan en el límite.
+    await new Promise((listo) => setTimeout(listo, 61000));
+    contextoCodigo = await navegador.newContext({ viewport: { width: 375, height: 812 } });
+    const r = await contextoCodigo.newPage();
+    vigilar(r, 'codigo');
+    await r.goto(`${BASE}/olvide`);
+    await r.getByRole('link', { name: /2\. Código de 6 dígitos por correo/ }).click();
+    await r.getByLabel('Correo de tu cuenta').fill(cuentaNueva);
+    await r.getByRole('button', { name: 'Enviar código' }).click();
+    await r.getByText(/te enviamos un código de 6 dígitos/).waitFor({ timeout: 5000 });
+    await revisarCelular(r, 'codigo-casillas');
+
+    const codigo = codigoDelLog(cuentaNueva);
+    if (!codigo) {
+        console.log('   (sin código en storage/logs/laravel.log: se verificó solo el envío)');
+        return;
+    }
+    await escribirCodigo(r, codigo);
+    await r.getByLabel('Contraseña nueva (mínimo 8 caracteres)').fill('claveCodigo99');
+    await r.getByLabel('Repite la contraseña').fill('claveCodigo99');
+    await r.getByRole('button', { name: 'Guardar contraseña' }).click();
+    await r.waitForURL('**/salones', { timeout: 5000 });
+});
+
+await etapa('Seguridad de mi cuenta: agregar y verificar el correo alternativo', async () => {
+    const r = await contextoCodigo.newPage();
+    vigilar(r, 'seguridad');
+    await r.goto(`${BASE}/salones`);
+    await r.getByText('Agrega un correo alternativo').waitFor({ timeout: 5000 }); // el aviso discreto
+    await r.getByRole('link', { name: 'Seguridad de mi cuenta' }).first().click();
+    await r.getByRole('button', { name: 'Agregar correo alternativo' }).click();
+    await r.getByRole('textbox', { name: 'Correo alternativo' }).fill(correoRespaldo);
+    await r.getByLabel('Tu contraseña actual').first().fill('claveCodigo99');
+    await r.getByRole('button', { name: 'Enviar código de verificación' }).click();
+    await r.getByText('Sin verificar').waitFor({ timeout: 5000 });
+
+    const codigo = codigoDelLog(correoRespaldo);
+    if (!codigo) {
+        console.log('   (sin código en el log: se verificó solo el envío)');
+        return;
+    }
+    await escribirCodigo(r, codigo);
+    await r.getByRole('button', { name: 'Verificar', exact: true }).click();
+    await r.getByText('Verificado', { exact: true }).first().waitFor({ timeout: 5000 });
+    await r.getByText(/^re\*\*\*@ejemplo\.com$/).waitFor({ timeout: 5000 });
+    await revisarCelular(r, 'seguridad-cuenta');
+});
+
+await etapa('Forma 3: código al correo alternativo verificado', async () => {
+    const ctx = await navegador.newContext({ viewport: { width: 375, height: 812 } });
+    const r = await ctx.newPage();
+    vigilar(r, 'alternativo');
+    await r.goto(`${BASE}/recuperar/codigo?via=alternativo`);
+    await r.getByLabel('Correo de tu cuenta').fill(cuentaNueva);
+    await r.getByRole('button', { name: 'Enviar código' }).click();
+    await r.getByText(/te enviamos un código de 6 dígitos a ese correo/).waitFor({ timeout: 5000 });
+
+    const codigo = codigoDelLog(correoRespaldo);
+    if (!codigo) {
+        console.log('   (sin código en el log: se verificó solo el envío)');
+        return;
+    }
+    await escribirCodigo(r, codigo);
+    await r.getByLabel('Contraseña nueva (mínimo 8 caracteres)').fill('claveAlterna99');
+    await r.getByLabel('Repite la contraseña').fill('claveAlterna99');
+    await r.getByRole('button', { name: 'Guardar contraseña' }).click();
+    await r.waitForURL('**/salones', { timeout: 5000 });
 });
 
 await navegador.close();

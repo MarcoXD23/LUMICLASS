@@ -20,4 +20,6 @@ enum TipoEvento: string
     case SimuladorReinicio = 'simulador.reinicio';
     case DemoPreparada = 'demo.preparada';
     case Configuracion = 'configuracion';
+    case CuentaContrasena = 'cuenta.contrasena';
+    case CuentaAlternativo = 'cuenta.alternativo';
 }

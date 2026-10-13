@@ -21,6 +21,7 @@ Hoy funciona con **hardware simulado**; la integración con la placa real es la 
 ## Qué hace
 
 - **Cuentas:** cada persona se registra y solo ve y controla **sus** salones (puede tener varios).
+- **Recuperar la contraseña** de 3 formas (enlace, código de 6 dígitos o correo alternativo) y **Seguridad de mi cuenta**.
 - **Inicio:** ocupado / vacío, luces encendidas, sensores activos, alertas y estado de cada zona, actualizado cada 3 s.
 - **Control:** encender o apagar cada luz o una zona entera; modo **automático** o **manual** por zona.
 - **Reglas** editables: "si está ocupado → encender", "si está vacío durante 5 min → apagar", por zona o para todo el salón.
@@ -71,9 +72,23 @@ confirmar el salón real).
 
 ### Recuperar contraseña y correo
 
-En "Ingresar" está **"¿Olvidaste tu contraseña?"**: llega un correo con un enlace (vence en 60 min, sirve una sola vez).
+En "Ingresar" → **"¿Olvidaste tu contraseña?"** hay **3 formas**:
+
+| Forma | Qué llega | Vigencia |
+| --- | --- | --- |
+| 1. Enlace por correo | Un enlace para crear la contraseña nueva | 60 min, un solo uso |
+| 2. Código de 6 dígitos por correo | Un código que se escribe en 6 casillas | 10 min, un solo uso |
+| 3. Usar mi correo alternativo | El mismo código, pero al **correo alternativo verificado** | 10 min, un solo uso |
+
+- El **correo alternativo** se agrega al registrarse (opcional) o en **"Seguridad de mi cuenta"** (ícono de escudo o tu
+  nombre arriba a la derecha). Pide tu contraseña actual y solo queda activo cuando escribes el código que le llega.
+  Debe ser distinto de tu correo principal y no estar en uso en otra cuenta.
+- **Seguridad:** los mensajes nunca dicen si un correo existe; máximo 3 códigos por hora por cuenta; tras 5 códigos
+  errados hay que esperar 15 min; los códigos se guardan con hash. Al cambiar la contraseña (cualquier forma) se cierran
+  las otras sesiones, se revocan los tokens de la API y queda registrado en la actividad de la cuenta.
+
 Por defecto `MAIL_MAILER=log`: el correo **no se envía**, queda escrito en `storage/logs/laravel.log` (en el hosting se
-abre con FileZilla y se busca `restablecer`). Para enviarlo de verdad con **Gmail**:
+abre con FileZilla y se busca `restablecer` o `código`). Para enviarlo de verdad con **Gmail**:
 
 1. En la cuenta de Gmail, activa la **verificación en 2 pasos**.
 2. Crea una **contraseña de aplicación** en https://myaccount.google.com/apppasswords (16 letras).
@@ -96,6 +111,13 @@ Por defecto usa **SQLite** (un archivo dentro del proyecto). Para **MySQL de WAM
 ícono de WAMP > MySQL). Luego `php artisan migrate --seed`.
 
 > `php artisan migrate:fresh --seed` **borra todos los datos** de la base configurada en `.env`. Revisa `DB_DATABASE` antes de usarlo.
+
+### Hosting sin terminal (InfinityFree)
+
+Si el hosting no permite `php artisan migrate`, los cambios de base de datos de cada versión están en
+`database/sql/`. En **phpMyAdmin** → tu base → pestaña **SQL** → pega el archivo → **Continuar**, una sola vez.
+`cambios_hosting.sql` agrega el correo alternativo y la tabla `codigos_verificacion` (solo estructura, no borra
+datos). Luego sube por FileZilla las carpetas cambiadas y `public/build` (compilado con `npm run build`).
 
 ## Para la presentación
 

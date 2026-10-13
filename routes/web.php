@@ -9,12 +9,15 @@ Route::middleware('guest')->controller(PaginaController::class)->group(function 
     Route::get('ingresar', 'ingresar')->name('ingresar');
     Route::get('registro', 'registro')->name('registro');
     Route::get('olvide', 'olvide')->name('olvide');
+    // Formas 2 y 3: ?via=correo | alternativo
+    Route::get('recuperar/codigo', 'recuperarConCodigo')->name('recuperar.codigo');
     // El nombre password.reset es el que Laravel espera para el enlace del correo.
     Route::get('restablecer/{token}', 'restablecer')->name('password.reset');
 });
 
 Route::middleware('auth')->controller(PaginaController::class)->group(function () {
     Route::get('salones', 'salones')->name('salones.index');
+    Route::get('cuenta/seguridad', 'seguridad')->name('cuenta.seguridad');
     Route::get('salones/{salon}', 'inicio')->name('salones.inicio');
     Route::get('salones/{salon}/control', 'control')->name('salones.control');
     Route::get('salones/{salon}/sensores', 'sensores')->name('salones.sensores');

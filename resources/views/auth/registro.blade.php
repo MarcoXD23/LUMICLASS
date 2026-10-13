@@ -14,6 +14,11 @@
             autocomplete="new-password" required error="errores.password" />
         <x-campo etiqueta="Repite la contraseña" type="password" x-model="password_confirmation"
             autocomplete="new-password" required />
+        <div>
+            <x-campo etiqueta="Correo alternativo (recomendado)" type="email" x-model="correo_alternativo" autocomplete="email"
+                error="errores.correo_alternativo" />
+            <p class="mt-1 text-sm text-slate-500 lg:text-xs">Opcional. Sirve para recuperar la contraseña si pierdes acceso a tu correo. Te enviaremos un código para verificarlo.</p>
+        </div>
 
         <button type="submit" class="btn btn-primario w-full" :disabled="enviando">
             <span x-show="!enviando">Crear cuenta</span>

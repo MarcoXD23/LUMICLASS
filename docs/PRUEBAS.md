@@ -32,6 +32,8 @@ reglas de "5 minutos vacío" se prueban sin esperar.
 | `Api/SeguridadTest`         | XSS, asignación masiva, contraseñas cifradas, cookie de sesión, tokens falsos             |
 | `Api/ConfiguracionTest`     | Zonas, luces y sensores: crear, renombrar, mover, quitar, límites, nombres únicos, último sensor, servo ocupado, otras cuentas |
 | `Api/RecuperarContrasenaTest` | Enlace por correo en español, respuesta igual exista o no la cuenta, enlace de un uso y 60 min, cierra otras sesiones y tokens |
+| `Api/RecuperarConCodigoTest` | Formas 2 y 3: código correcto, incorrecto, vencido y reutilizado; pedir otro anula el anterior; 5 intentos y 15 min de espera; 3 envíos por hora; correo inexistente; falla del correo; alternativo verificado y sin verificar |
+| `Api/CorreoAlternativoTest` | Seguridad de mi cuenta: contraseña actual, igual al principal, usado en otra cuenta, código de verificación, cambiar, quitar, registro con alternativo, aviso discreto |
 | `Api/MensajesEnEspanolTest` | Toda regla de validación usada tiene su mensaje en español                                |
 | `Web/PaginasTest`           | Redirecciones sin sesión, páginas del dueño, 404 a otra cuenta, errores en español        |
 
@@ -59,7 +61,7 @@ Nunca uses tu base de trabajo (`lumiclass`) para esto.
 Necesita el servidor encendido (`php artisan serve --port=8001`) y la cuenta demo (`php artisan migrate --seed`).
 Usa el Edge o Chrome ya instalados (no descarga navegadores). Recorre en tamaño celular: ingresar (también con
 contraseña mala), simulador, control, servo en falla, sensores, reglas, historial y CSV, estadísticas, servidor
-caído y recuperado, página 404, escritorio y registro. Revisa además que en celular no haya scroll horizontal
+caído y recuperado, página 404, escritorio, registro, las 3 formas de recuperar la contraseña y Seguridad de mi cuenta. Revisa además que en celular no haya scroll horizontal
 ni botones de menos de 44 px. Deja capturas en `tests/navegador/capturas/` (no se suben a git).
 
 **Ojo:** modifica el salón demo (reinicia el simulador, crea una regla y una cuenta de prueba).
