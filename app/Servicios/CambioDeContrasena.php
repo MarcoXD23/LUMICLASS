@@ -21,11 +21,12 @@ class CambioDeContrasena
         'enlace' => 'enlace por correo',
         'codigo' => 'código por correo',
         'alternativo' => 'código al correo alternativo',
+        'comando' => 'el comando de consola',
     ];
 
     public function __construct(private readonly RegistroEventos $eventos) {}
 
-    public function aplicar(User $usuario, string $nueva, string $forma, Request $request): void
+    public function aplicar(User $usuario, string $nueva, string $forma, ?Request $request = null): void
     {
         $usuario->forceFill(['password' => $nueva, 'remember_token' => Str::random(60)])->save();
 
@@ -44,7 +45,8 @@ class CambioDeContrasena
             ['forma' => $forma],
         );
 
-        if ($request->hasSession()) {
+        // Desde la consola no hay navegador: nadie queda ingresado.
+        if ($request?->hasSession()) {
             Auth::guard('web')->login($usuario);
             $request->session()->regenerate();
         }

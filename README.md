@@ -140,6 +140,7 @@ En `.env`, `LUMICLASS_FACTOR_TIEMPO_REGLAS=0.1` acorta las esperas de las reglas
 | `php artisan serve --port=8001`    | Levanta la aplicación en http://localhost:8001                |
 | `npm run build`                    | Compila la interfaz (CSS/JS). `npm run dev` la recompila al editar |
 | `php artisan lumiclass:demo`       | Prepara la cuenta demo para presentar                         |
+| `php artisan lumiclass:cambiar-contrasena {correo}` | Cambia la contraseña de una cuenta (ver abajo) |
 | `php artisan lumiclass:tick`       | Revisa órdenes pendientes de los servos y reglas con tiempo   |
 | `php artisan schedule:work`        | (Opcional, otra consola) ejecuta el tick cada 2 s             |
 | `php artisan test`                 | Pruebas del backend (no tocan tu base de datos)               |
@@ -149,6 +150,18 @@ En `.env`, `LUMICLASS_FACTOR_TIEMPO_REGLAS=0.1` acorta las esperas de las reglas
 
 `php artisan test` y Pint necesitan las dependencias de desarrollo: si instalaste con `composer install --no-dev`,
 ejecuta `composer install` antes.
+
+### Cambiar la contraseña de una cuenta desde la consola
+
+```
+php artisan lumiclass:cambiar-contrasena ana@correo.com
+```
+
+- Pide la contraseña nueva **dos veces y sin mostrarla**. Nunca se escribe en el comando, así no queda en el historial de la consola.
+- Revisa que el correo exista (da igual si lo escribes con mayúsculas o espacios), que la contraseña tenga al menos 8 caracteres y que las dos coincidan. Si algo falla, avisa y no cambia nada.
+- Cierra las sesiones abiertas de esa cuenta, revoca sus tokens de la API y lo anota en el historial.
+- Al final muestra en qué base hizo el cambio (`DB_CONNECTION` y `DB_DATABASE`). Revísala antes, porque el comando usa la base de tu `.env`.
+- **No sirve en el hosting**, porque InfinityFree no tiene terminal. Allá usa "¿Olvidaste tu contraseña?" en la pantalla de ingreso.
 
 ## Problemas frecuentes
 
