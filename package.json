@@ -5,7 +5,7 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite",
-        "prueba:js": "vitest run",
+        "prueba:js": "node scripts/vitest.mjs",
         "prueba:navegador": "node tests/navegador/recorrido.mjs"
     },
     "devDependencies": {

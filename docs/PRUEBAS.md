@@ -48,6 +48,10 @@ Nunca uses tu base de trabajo (`lumiclass`) para esto.
 
 ## 2. JavaScript — `npm run prueba:js` (`tests/js/`, Vitest)
 
+`prueba:js` pasa por `scripts/vitest.mjs`, que cambia `c:\` por `C:\` antes de llamar a Vitest: en Windows, si la terminal
+abre la carpeta como `c:\...` (VS Code a veces lo hace), Node carga Vitest dos veces y todas las pruebas fallan con
+`Cannot read properties of undefined (reading 'config')`. Llamar `npx vitest run` directo solo funciona desde `C:\`.
+
 | Archivo              | Cubre                                                                                 |
 | -------------------- | ------------------------------------------------------------------------------------- |
 | `api.test.js`        | CSRF, errores por campo, 401 → ingresar, 419 → reintenta una vez, sin conexión, UUID  |
@@ -55,6 +59,7 @@ Nunca uses tu base de trabajo (`lumiclass`) para esto.
 | `formato.test.js`    | Duraciones, "hace X", textos de reglas                                                |
 | `mezclar.test.js`    | Los getters de Alpine siguen vivos al combinar componentes                            |
 | `reglas.test.js`     | Editar una regla no cambia su duración en segundos                                    |
+| `conectarPlaca.test.js` | Código de conexión de la placa y QR generado sin internet                          |
 
 ## 3. Navegador — `npm run prueba:navegador` (`tests/navegador/recorrido.mjs`)
 
