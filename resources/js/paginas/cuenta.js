@@ -33,6 +33,7 @@ export function registro() {
         email: '',
         password: '',
         password_confirmation: '',
+        correo_alternativo: '',
         errores: {},
         mensaje: '',
         enviando: false,
@@ -44,12 +45,14 @@ export function registro() {
 
             try {
                 const r = await api('POST', '/auth/registro', {
+                    correo_alternativo: this.correo_alternativo || null,
                     nombre: this.nombre,
                     email: this.email,
                     password: this.password,
                     password_confirmation: this.password_confirmation,
                 });
-                window.location.href = `/salones/${r.salon_id}`;
+                // Si dio un correo alternativo, va directo a verificarlo con el código que le llegó.
+                window.location.href = r.verificar_alternativo ? '/cuenta/seguridad' : `/salones/${r.salon_id}`;
             } catch (error) {
                 this.errores = error.erroresPorCampo?.() ?? {};
                 this.mensaje = error.message;
@@ -131,6 +134,98 @@ export function sesion() {
                 await api('POST', '/auth/logout');
             } finally {
                 window.location.href = '/ingresar';
+            }
+        },
+    };
+}
+
+/**
+ * Formas 2 y 3 de recuperar la contraseña: código de 6 dígitos al correo principal (via "correo")
+ * o al correo alternativo verificado (via "alternativo").
+ */
+export function recuperarCodigo(via) {
+    return {
+        via,
+        paso: 'correo',
+        email: '',
+        codigo: '',
+        password: '',
+        password_confirmation: '',
+        aviso: '',
+        errores: {},
+        mensaje: '',
+        enviando: false,
+
+        async pedir() {
+            await this.llamar(async () => {
+                this.aviso = (await api('POST', '/auth/codigo', { email: this.email, via: this.via })).mensaje;
+                this.codigo = '';
+                this.paso = 'codigo';
+            });
+        },
+
+        reenviar() {
+            return this.pedir();
+        },
+
+        async cambiar() {
+            const ok = await this.llamar(() =>
+                api('POST', '/auth/codigo/restablecer', {
+                    email: this.email,
+                    via: this.via,
+                    codigo: this.codigo,
+                    password: this.password,
+                    password_confirmation: this.password_confirmation,
+                }),
+            );
+
+            if (ok) {
+                window.location.href = '/salones';
+            } else if (this.errores.codigo === undefined && this.mensaje) {
+                // Código incorrecto o vencido: se limpian las casillas para escribirlo de nuevo.
+                this.codigo = '';
+            }
+        },
+
+        async llamar(accion) {
+            this.enviando = true;
+            this.errores = {};
+            this.mensaje = '';
+            try {
+                await accion();
+                return true;
+            } catch (error) {
+                this.errores = error.erroresPorCampo?.() ?? {};
+                this.mensaje = error.message;
+                return false;
+            } finally {
+                this.enviando = false;
+            }
+        },
+    };
+}
+
+/** Aviso "agrega un correo alternativo": discreto, no bloquea y se puede cerrar (hasta la próxima sesión del navegador). */
+export function avisoSeguridad() {
+    const CLAVE = 'lumiclass.aviso-seguridad';
+
+    return {
+        visible: true,
+
+        init() {
+            try {
+                this.visible = sessionStorage.getItem(CLAVE) !== 'cerrado';
+            } catch {
+                this.visible = true;
+            }
+        },
+
+        cerrar() {
+            this.visible = false;
+            try {
+                sessionStorage.setItem(CLAVE, 'cerrado');
+            } catch {
+                // Sin almacenamiento (modo privado estricto): solo se oculta en esta página.
             }
         },
     };

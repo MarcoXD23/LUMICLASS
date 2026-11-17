@@ -5,7 +5,8 @@
 LUMICLASS sabe si el salón está ocupado o vacío (sensores de presencia), enciende y apaga las luces moviendo el
 interruptor de pared con un servomotor, deja controlarlas a mano desde el celular o el computador, y registra todo:
 historial, alertas y estadísticas (incluidas las horas en que las luces quedaron encendidas **con el salón vacío**).
-Hoy funciona con **hardware simulado**; la integración con la placa real es la Fase 8.
+Funciona con **hardware simulado** (`LUMICLASS_DRIVER=simulado`) o con una **placa ESP32 real** con servos SG90 y
+sensores PIR (`LUMICLASS_DRIVER=real`): guía paso a paso en [docs/HARDWARE.md](docs/HARDWARE.md).
 
 **Equipo:** Camilo, Marcos y Sofía.
 
@@ -21,6 +22,7 @@ Hoy funciona con **hardware simulado**; la integración con la placa real es la 
 ## Qué hace
 
 - **Cuentas:** cada persona se registra y solo ve y controla **sus** salones (puede tener varios).
+- **Recuperar la contraseña** de 3 formas (enlace, código de 6 dígitos o correo alternativo) y **Seguridad de mi cuenta**.
 - **Inicio:** ocupado / vacío, luces encendidas, sensores activos, alertas y estado de cada zona, actualizado cada 3 s.
 - **Control:** encender o apagar cada luz o una zona entera; modo **automático** o **manual** por zona.
 - **Reglas** editables: "si está ocupado → encender", "si está vacío durante 5 min → apagar", por zona o para todo el salón.
@@ -71,9 +73,23 @@ confirmar el salón real).
 
 ### Recuperar contraseña y correo
 
-En "Ingresar" está **"¿Olvidaste tu contraseña?"**: llega un correo con un enlace (vence en 60 min, sirve una sola vez).
+En "Ingresar" → **"¿Olvidaste tu contraseña?"** hay **3 formas**:
+
+| Forma | Qué llega | Vigencia |
+| --- | --- | --- |
+| 1. Enlace por correo | Un enlace para crear la contraseña nueva | 60 min, un solo uso |
+| 2. Código de 6 dígitos por correo | Un código que se escribe en 6 casillas | 10 min, un solo uso |
+| 3. Usar mi correo alternativo | El mismo código, pero al **correo alternativo verificado** | 10 min, un solo uso |
+
+- El **correo alternativo** se agrega al registrarse (opcional) o en **"Seguridad de mi cuenta"** (ícono de escudo o tu
+  nombre arriba a la derecha). Pide tu contraseña actual y solo queda activo cuando escribes el código que le llega.
+  Debe ser distinto de tu correo principal y no estar en uso en otra cuenta.
+- **Seguridad:** los mensajes nunca dicen si un correo existe; máximo 3 códigos por hora por cuenta; tras 5 códigos
+  errados hay que esperar 15 min; los códigos se guardan con hash. Al cambiar la contraseña (cualquier forma) se cierran
+  las otras sesiones, se revocan los tokens de la API y queda registrado en la actividad de la cuenta.
+
 Por defecto `MAIL_MAILER=log`: el correo **no se envía**, queda escrito en `storage/logs/laravel.log` (en el hosting se
-abre con FileZilla y se busca `restablecer`). Para enviarlo de verdad con **Gmail**:
+abre con FileZilla y se busca `restablecer` o `código`). Para enviarlo de verdad con **Gmail**:
 
 1. En la cuenta de Gmail, activa la **verificación en 2 pasos**.
 2. Crea una **contraseña de aplicación** en https://myaccount.google.com/apppasswords (16 letras).
@@ -97,6 +113,16 @@ Por defecto usa **SQLite** (un archivo dentro del proyecto). Para **MySQL de WAM
 
 > `php artisan migrate:fresh --seed` **borra todos los datos** de la base configurada en `.env`. Revisa `DB_DATABASE` antes de usarlo.
 
+### Hosting sin terminal (InfinityFree)
+
+Si el hosting no permite `php artisan migrate`, los cambios de base de datos de cada versión están en
+`database/sql/`. En **phpMyAdmin** → tu base → pestaña **SQL** → pega el archivo → **Continuar**, una sola vez.
+`cambios_hosting.sql` agrega el correo alternativo y la tabla `codigos_verificacion` (solo estructura, no borra
+datos). `fase8_placa.sql` agrega la tabla `placas` y numera sensores y servos para la placa ESP32 (**córrelo antes
+de subir la versión de la Fase 8**). Luego sube por FileZilla las carpetas cambiadas y `public/build` (compilado con
+`npm run build`). La placa necesita llegar al servidor por la red local: con el hosting en internet, usa el
+simulador o el servidor del PC (ver docs/HARDWARE.md).
+
 ## Para la presentación
 
 ```
@@ -118,6 +144,7 @@ En `.env`, `LUMICLASS_FACTOR_TIEMPO_REGLAS=0.1` acorta las esperas de las reglas
 | `php artisan serve --port=8001`    | Levanta la aplicación en http://localhost:8001                |
 | `npm run build`                    | Compila la interfaz (CSS/JS). `npm run dev` la recompila al editar |
 | `php artisan lumiclass:demo`       | Prepara la cuenta demo para presentar                         |
+| `php artisan lumiclass:cambiar-contrasena {correo}` | Cambia la contraseña de una cuenta (ver abajo) |
 | `php artisan lumiclass:tick`       | Revisa órdenes pendientes de los servos y reglas con tiempo   |
 | `php artisan schedule:work`        | (Opcional, otra consola) ejecuta el tick cada 2 s             |
 | `php artisan test`                 | Pruebas del backend (no tocan tu base de datos)               |
@@ -127,6 +154,18 @@ En `.env`, `LUMICLASS_FACTOR_TIEMPO_REGLAS=0.1` acorta las esperas de las reglas
 
 `php artisan test` y Pint necesitan las dependencias de desarrollo: si instalaste con `composer install --no-dev`,
 ejecuta `composer install` antes.
+
+### Cambiar la contraseña de una cuenta desde la consola
+
+```
+php artisan lumiclass:cambiar-contrasena ana@correo.com
+```
+
+- Pide la contraseña nueva **dos veces y sin mostrarla**. Nunca se escribe en el comando, así no queda en el historial de la consola.
+- Revisa que el correo exista (da igual si lo escribes con mayúsculas o espacios), que la contraseña tenga al menos 8 caracteres y que las dos coincidan. Si algo falla, avisa y no cambia nada.
+- Cierra las sesiones abiertas de esa cuenta, revoca sus tokens de la API y lo anota en el historial.
+- Al final muestra en qué base hizo el cambio (`DB_CONNECTION` y `DB_DATABASE`). Revísala antes, porque el comando usa la base de tu `.env`.
+- **No sirve en el hosting**, porque InfinityFree no tiene terminal. Allá usa "¿Olvidaste tu contraseña?" en la pantalla de ingreso.
 
 ## Problemas frecuentes
 
@@ -170,7 +209,7 @@ routes/      Rutas web y de la API (/api/v1)
 database/    Migraciones y seeders
 resources/   Vistas (Blade), estilos (Tailwind) y JavaScript (Alpine)
 tests/       Pruebas: Feature (PHP), js (Vitest), navegador (Edge/Chrome)
-firmware/    Código de la placa (Fase 8)
+firmware/    Programa de la placa ESP32 (Arduino IDE) y diagrama para Wokwi
 docs/        Arquitectura, pruebas, guía de demo y guion de pruebas
 diseno/      Referencia de Figma (vacía: el diseño actual es propio, PROPUESTA)
 ```
@@ -180,5 +219,4 @@ Reglas de trabajo del equipo: [CLAUDE.md](CLAUDE.md).
 
 Construido con [Laravel](https://laravel.com) (licencia MIT), Alpine.js y Tailwind CSS.
 
-**Estado:** Fases 1–7, 9 y 10 completadas. Pendiente: Fase 8 (hardware real), cuando se confirmen la placa, los
-sensores y los servos.
+**Estado:** Fases 1–10 completadas. Fase 8: ESP32 DevKit V1, 2 servos SG90 y 2 PIR HC-SR501 (ver docs/HARDWARE.md).

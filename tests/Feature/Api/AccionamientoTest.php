@@ -110,11 +110,11 @@ class AccionamientoTest extends TestCase
         $this->getJson("/api/v1/salones/{$this->luz->zona->salon_id}/estado")->assertOk()->assertJsonPath('data.luces.encendidas', 1);
     }
 
-    public function test_driver_real_aun_no_implementado_responde_fallida(): void
+    public function test_driver_real_sin_placa_responde_fallida(): void
     {
         config(['lumiclass.driver' => 'real']);
 
         $this->encender()->assertOk()->assertJsonPath('resultado', 'fallida');
-        $this->assertStringContainsString('Fase 8', Actuador::first()->ultimo_resultado);
+        $this->assertStringContainsString('no tiene placa', Actuador::first()->ultimo_resultado);
     }
 }

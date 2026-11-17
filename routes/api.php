@@ -1,16 +1,21 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ConexionPlacaController;
 use App\Http\Controllers\Api\ConfiguracionController;
+use App\Http\Controllers\Api\CuentaController;
 use App\Http\Controllers\Api\EstadisticaController;
 use App\Http\Controllers\Api\EventoController;
 use App\Http\Controllers\Api\LuzController;
+use App\Http\Controllers\Api\PlacaController;
 use App\Http\Controllers\Api\ReglaController;
 use App\Http\Controllers\Api\SalonController;
 use App\Http\Controllers\Api\SaludController;
 use App\Http\Controllers\Api\SensorController;
 use App\Http\Controllers\Api\SimuladorController;
 use App\Http\Controllers\Api\ZonaController;
+use App\Http\Middleware\AutenticarPlaca;
+use App\Http\Middleware\SoloDriverReal;
 use App\Http\Middleware\SoloSimulador;
 use App\Models\Actuador;
 use App\Models\Luz;
@@ -45,11 +50,32 @@ Route::prefix('v1')->name('api.')->group(function () {
         Route::post('auth/token', [AuthController::class, 'token']);
         Route::post('auth/olvide', [AuthController::class, 'olvide']);
         Route::post('auth/restablecer', [AuthController::class, 'restablecer']);
+        // Formas 2 y 3: código de 6 dígitos al correo principal o al alternativo verificado.
+        Route::post('auth/codigo', [AuthController::class, 'enviarCodigo']);
+        Route::post('auth/codigo/restablecer', [AuthController::class, 'restablecerConCodigo']);
     });
+
+    // API de la placa ESP32: la clave de la placa reemplaza a la sesión. 240/min: la placa pide ~70.
+    Route::prefix('placa')->middleware([SoloDriverReal::class, AutenticarPlaca::class, 'throttle:240,1'])
+        ->controller(PlacaController::class)->group(function () {
+            Route::post('heartbeat', 'heartbeat');
+            Route::post('lecturas', 'lecturas');
+            Route::get('ordenes', 'ordenes');
+            Route::post('confirmar', 'confirmar');
+        });
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('auth/logout', [AuthController::class, 'logout']);
         Route::get('auth/yo', [AuthController::class, 'yo']);
+
+        // Seguridad de mi cuenta: correo alternativo para recuperar la contraseña.
+        Route::controller(CuentaController::class)->group(function () {
+            Route::get('cuenta/seguridad', 'seguridad');
+            Route::post('cuenta/alternativo', 'guardarAlternativo');
+            Route::post('cuenta/alternativo/reenviar', 'reenviarCodigo');
+            Route::post('cuenta/alternativo/verificar', 'verificarAlternativo');
+            Route::delete('cuenta/alternativo', 'quitarAlternativo');
+        });
 
         Route::apiResource('salones', SalonController::class)->parameters(['salones' => 'salon']);
         Route::get('salones/{salon}/estado', [SalonController::class, 'estado']);
@@ -76,6 +102,10 @@ Route::prefix('v1')->name('api.')->group(function () {
             Route::patch('sensores/{sensor}', 'renombrarSensor');
             Route::delete('sensores/{sensor}', 'quitarSensor');
         });
+        // Conectar placa: estado, direcciones del PC y clave (se muestra una sola vez).
+        Route::get('salones/{salon}/placa', [ConexionPlacaController::class, 'show']);
+        Route::post('salones/{salon}/placa/clave', [ConexionPlacaController::class, 'generarClave']);
+
         Route::patch('zonas/{zona}/modo', [ZonaController::class, 'modo']);
         Route::post('zonas/{zona}/comando', [ZonaController::class, 'comando']);
 

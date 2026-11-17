@@ -1,13 +1,16 @@
 import Alpine from 'alpinejs';
 import { avisar, registrarAvisos } from './avisos';
 import { configuracion } from './paginas/configuracion';
+import { conectarPlaca } from './paginas/conectarPlaca';
 import { control } from './paginas/control';
-import { ingreso, olvide, registro, restablecer, sesion } from './paginas/cuenta';
+import { casillasCodigo } from './casillasCodigo';
+import { avisoSeguridad, ingreso, olvide, recuperarCodigo, registro, restablecer, sesion } from './paginas/cuenta';
 import { estadisticas } from './paginas/estadisticas';
 import { estadoSalon } from './paginas/estadoSalon';
 import { historial } from './paginas/historial';
 import { reglas } from './paginas/reglas';
 import { salones } from './paginas/salones';
+import { seguridad } from './paginas/seguridad';
 import { simulador } from './paginas/simulador';
 
 registrarAvisos();
@@ -26,12 +29,17 @@ Alpine.data('ingreso', ingreso);
 Alpine.data('registro', registro);
 Alpine.data('olvide', olvide);
 Alpine.data('restablecer', restablecer);
+Alpine.data('recuperarCodigo', recuperarCodigo);
+Alpine.data('casillasCodigo', casillasCodigo);
+Alpine.data('seguridad', seguridad);
+Alpine.data('avisoSeguridad', avisoSeguridad);
 Alpine.data('sesion', sesion);
 Alpine.data('salones', salones);
 // Inicio y Sensores solo muestran el estado del salón.
 Alpine.data('estadoSalon', estadoSalon);
 Alpine.data('control', control);
 Alpine.data('configuracion', configuracion);
+Alpine.data('conectarPlaca', conectarPlaca);
 Alpine.data('reglas', reglas);
 Alpine.data('historial', historial);
 Alpine.data('estadisticas', estadisticas);

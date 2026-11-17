@@ -1,0 +1,4 @@
+# Librerías para Wokwi en el navegador (pestaña "Library Manager")
+WiFiManager
+ArduinoJson
+ESP32Servo

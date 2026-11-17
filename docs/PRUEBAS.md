@@ -32,6 +32,8 @@ reglas de "5 minutos vacío" se prueban sin esperar.
 | `Api/SeguridadTest`         | XSS, asignación masiva, contraseñas cifradas, cookie de sesión, tokens falsos             |
 | `Api/ConfiguracionTest`     | Zonas, luces y sensores: crear, renombrar, mover, quitar, límites, nombres únicos, último sensor, servo ocupado, otras cuentas |
 | `Api/RecuperarContrasenaTest` | Enlace por correo en español, respuesta igual exista o no la cuenta, enlace de un uso y 60 min, cierra otras sesiones y tokens |
+| `Api/RecuperarConCodigoTest` | Formas 2 y 3: código correcto, incorrecto, vencido y reutilizado; pedir otro anula el anterior; 5 intentos y 15 min de espera; 3 envíos por hora; correo inexistente; falla del correo; alternativo verificado y sin verificar |
+| `Api/CorreoAlternativoTest` | Seguridad de mi cuenta: contraseña actual, igual al principal, usado en otra cuenta, código de verificación, cambiar, quitar, registro con alternativo, aviso discreto |
 | `Api/MensajesEnEspanolTest` | Toda regla de validación usada tiene su mensaje en español                                |
 | `Web/PaginasTest`           | Redirecciones sin sesión, páginas del dueño, 404 a otra cuenta, errores en español        |
 
@@ -46,6 +48,10 @@ Nunca uses tu base de trabajo (`lumiclass`) para esto.
 
 ## 2. JavaScript — `npm run prueba:js` (`tests/js/`, Vitest)
 
+`prueba:js` pasa por `scripts/vitest.mjs`, que cambia `c:\` por `C:\` antes de llamar a Vitest: en Windows, si la terminal
+abre la carpeta como `c:\...` (VS Code a veces lo hace), Node carga Vitest dos veces y todas las pruebas fallan con
+`Cannot read properties of undefined (reading 'config')`. Llamar `npx vitest run` directo solo funciona desde `C:\`.
+
 | Archivo              | Cubre                                                                                 |
 | -------------------- | ------------------------------------------------------------------------------------- |
 | `api.test.js`        | CSRF, errores por campo, 401 → ingresar, 419 → reintenta una vez, sin conexión, UUID  |
@@ -53,13 +59,14 @@ Nunca uses tu base de trabajo (`lumiclass`) para esto.
 | `formato.test.js`    | Duraciones, "hace X", textos de reglas                                                |
 | `mezclar.test.js`    | Los getters de Alpine siguen vivos al combinar componentes                            |
 | `reglas.test.js`     | Editar una regla no cambia su duración en segundos                                    |
+| `conectarPlaca.test.js` | Código de conexión de la placa y QR generado sin internet                          |
 
 ## 3. Navegador — `npm run prueba:navegador` (`tests/navegador/recorrido.mjs`)
 
 Necesita el servidor encendido (`php artisan serve --port=8001`) y la cuenta demo (`php artisan migrate --seed`).
 Usa el Edge o Chrome ya instalados (no descarga navegadores). Recorre en tamaño celular: ingresar (también con
 contraseña mala), simulador, control, servo en falla, sensores, reglas, historial y CSV, estadísticas, servidor
-caído y recuperado, página 404, escritorio y registro. Revisa además que en celular no haya scroll horizontal
+caído y recuperado, página 404, escritorio, registro, las 3 formas de recuperar la contraseña y Seguridad de mi cuenta. Revisa además que en celular no haya scroll horizontal
 ni botones de menos de 44 px. Deja capturas en `tests/navegador/capturas/` (no se suben a git).
 
 **Ojo:** modifica el salón demo (reinicia el simulador, crea una regla y una cuenta de prueba).

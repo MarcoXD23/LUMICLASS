@@ -17,7 +17,10 @@ enum TipoEvento: string
     case ReglaCreada = 'regla.creada';
     case ReglaActualizada = 'regla.actualizada';
     case ReglaEliminada = 'regla.eliminada';
+    case PlacaConexion = 'placa.conexion';
     case SimuladorReinicio = 'simulador.reinicio';
     case DemoPreparada = 'demo.preparada';
     case Configuracion = 'configuracion';
+    case CuentaContrasena = 'cuenta.contrasena';
+    case CuentaAlternativo = 'cuenta.alternativo';
 }

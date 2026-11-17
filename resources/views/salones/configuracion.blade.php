@@ -5,7 +5,7 @@
         <div>
             <h1 class="text-2xl font-bold">Configurar salón</h1>
             <p class="text-sm text-slate-600">Agrega, renombra, mueve o quita zonas, luces y sensores. Cada luz nueva trae su
-                servo. Los cambios quedan en el Historial.</p>
+                servo. Los cambios quedan en el Historial. Abajo está <a href="#conectar-placa" class="underline">Conectar placa</a>.</p>
         </div>
 
         <p x-show="errorCarga" x-text="errorCarga" x-cloak role="alert"
@@ -46,6 +46,15 @@
                                         <div class="min-w-0 flex-1">
                                             <p class="truncate font-medium" x-text="luz.nombre"></p>
                                             <p class="text-sm text-slate-500 lg:text-xs" x-text="luz.actuador ? luz.actuador.nombre : 'Sin servo'"></p>
+                                            <label x-show="luz.actuador" class="mt-1 flex items-center gap-1 text-sm text-slate-500 lg:text-xs">
+                                                Pin de servo en la placa:
+                                                <select class="rounded border-slate-300 py-0 text-sm lg:text-xs" :disabled="trabajando"
+                                                    @change="cambiarNumeroServo(luz, $event.target.value)" :aria-label="`Número de servo en la placa para ${luz.nombre}`">
+                                                    <template x-for="n in numerosServo" :key="n">
+                                                        <option :value="n" x-text="n" :selected="n === luz.actuador?.numero_en_placa"></option>
+                                                    </template>
+                                                </select>
+                                            </label>
                                         </div>
                                         <button type="button" class="btn btn-secundario min-h-11 shrink-0 px-3 lg:min-h-9" :disabled="trabajando"
                                             @click="renombrarLuz(luz)" :aria-label="`Renombrar ${luz.nombre}`">
@@ -86,7 +95,15 @@
                                 <li class="flex items-center gap-2 rounded-xl bg-slate-50 p-3">
                                     <div class="min-w-0 flex-1">
                                         <p class="truncate font-medium" x-text="sensor.nombre"></p>
-                                        <p class="text-sm text-slate-500 lg:text-xs" x-text="sensor.tipo.toUpperCase()"></p>
+                                        <label class="flex items-center gap-1 text-sm text-slate-500 lg:text-xs">
+                                            <span x-text="sensor.tipo.toUpperCase()"></span> en la placa:
+                                            <select class="rounded border-slate-300 py-0 text-sm lg:text-xs" :disabled="trabajando"
+                                                @change="cambiarNumeroSensor(sensor, $event.target.value)" :aria-label="`Número de PIR en la placa para ${sensor.nombre}`">
+                                                <template x-for="n in numerosSensor" :key="n">
+                                                    <option :value="n" x-text="n" :selected="n === sensor.numero_en_placa"></option>
+                                                </template>
+                                            </select>
+                                        </label>
                                     </div>
                                     <button type="button" class="btn btn-secundario min-h-11 px-3 lg:min-h-9" :disabled="trabajando"
                                         @click="renombrarSensor(sensor)" :aria-label="`Renombrar ${sensor.nombre}`">
@@ -127,5 +144,7 @@
                 <button type="submit" class="btn btn-primario" :disabled="trabajando">Crear zona</button>
             </form>
         </section>
+
+        @include('salones._conectar-placa')
     </div>
 @endsection

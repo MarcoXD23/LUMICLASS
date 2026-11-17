@@ -36,7 +36,12 @@
                         <span class="hidden sm:inline">Simulador</span>
                     </a>
                 @endif
-                <span class="hidden text-sm text-slate-500 md:inline">{{ auth()->user()->name }}</span>
+                <a href="{{ route('cuenta.seguridad') }}" class="hidden text-sm text-slate-500 hover:text-marca-600 md:inline"
+                    title="Seguridad de mi cuenta">{{ auth()->user()->name }}</a>
+                {{-- Celular: botón con escudo (en computador está el nombre) --}}
+                <a href="{{ route('cuenta.seguridad') }}" class="btn btn-secundario min-h-11 px-3 md:hidden" aria-label="Seguridad de mi cuenta">
+                    <x-icono nombre="escudo" clase="size-4" />
+                </a>
                 <button type="button" class="btn btn-secundario min-h-11 lg:min-h-9 px-3" x-data="sesion" @click="salir" aria-label="Salir"
                     :disabled="saliendo">
                     <x-icono nombre="salir" clase="size-4" /> <span class="hidden sm:inline">Salir</span>
@@ -51,6 +56,7 @@
         @endisset
 
         <main class="min-w-0 flex-1">
+            <x-aviso-seguridad />
             @yield('contenido')
         </main>
     </div>

@@ -43,7 +43,7 @@
 LUMICLASS/
 ├─ app/
 │  ├─ Console/Commands/      # lumiclass:tick
-│  ├─ Drivers/               # DriverHardware + DriverSimulado + DriverReal (Fase 8)
+│  ├─ Drivers/               # DriverHardware + DriverSimulado + DriverReal (placa ESP32)
 │  ├─ Enums/                 # estados posibles: modo, luz, conexión, ocupación, orden, eventos
 │  ├─ Exceptions/            # ComandoRechazado (409)
 │  ├─ Http/
@@ -58,7 +58,7 @@ LUMICLASS/
 ├─ lang/es/                  # mensajes en español
 ├─ routes/api.php            # /api/v1/...
 ├─ tests/Feature/Api/        # pruebas de cada endpoint
-├─ firmware/                 # Fase 8, solo con hardware confirmado
+├─ firmware/lumiclass_placa/ # Programa del ESP32 (Arduino IDE) + diagram.json de Wokwi
 ├─ docs/
 └─ diseno/
 ```
@@ -70,7 +70,8 @@ salones** y puede hacer todo, pero **solo** sobre lo suyo. Un único rol (sin ad
 
 | Tabla                    | Campos clave                                                                                                   |
 | ------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| `users`                  | id, name, email (único, en minúsculas), password (cifrada)                                                     |
+| `users`                  | id, name, email (único, en minúsculas), password (cifrada), correo_alternativo (único, solo verificado), correo_alternativo_verificado_en, correo_alternativo_pendiente |
+| `codigos_verificacion`   | user_id + proposito (únicos juntos: pedir otro anula el anterior), destino, codigo_hash (el código de 6 dígitos con hash), expira_en (10 min) |
 | `salones`                | id, user_id (dueño), nombre (único por cuenta). La ocupación se **calcula** a partir de los sensores.         |
 | `zonas`                  | id, salon_id, nombre, modo (`automatico` / `manual`)                                                           |
 | `luces`                  | id, zona_id, actuador_id (único), nombre, estado_deseado (`encendida`/`apagada`), estado_real (+ `desconocida`) |
@@ -79,7 +80,7 @@ salones** y puede hacer todo, pero **solo** sobre lo suyo. Un único rol (sin ad
 | `reglas`                 | id, salon_id, zona_id? (null = todas las zonas de su salón), nombre, activa, prioridad (menor = primero), condicion (JSON), accion (JSON) |
 | `eventos`                | id, salon_id, tipo, origen (`usuario`/`regla`/`sistema`/`simulador`), severidad, entidad_tipo, entidad_id, mensaje, datos, created_at |
 | `solicitudes_procesadas` | user_id + id_solicitud (únicos juntos), ruta, codigo_http, respuesta: evita ejecutar dos veces la misma orden  |
-| `personal_access_tokens` | tokens de Sanctum para scripts y (Fase 8) la placa                                                             |
+| `personal_access_tokens` | tokens de Sanctum para scripts                                                                                 |
 | `cambios_luz` · `cambios_ocupacion` | desde cuándo cada luz/zona está en cada estado: base de las estadísticas (sección 5)          |
 
 - Borrar un salón borra en cascada sus zonas, luces, servos, sensores, reglas e historial. Borrar una cuenta borra sus salones.
@@ -104,16 +105,25 @@ salones** y puede hacer todo, pero **solo** sobre lo suyo. Un único rol (sin ad
 | POST   | `/auth/token`     | `{ email, password, nombre_dispositivo? }` → token para scripts y placa                    |
 | POST   | `/auth/olvide`    | `{ email }` → envía el enlace para crear contraseña nueva. Respuesta **siempre igual** (no revela si el correo existe) |
 | POST   | `/auth/restablecer` | `{ token, email, password, password_confirmation }` → cambia la contraseña, revoca tokens, cierra otras sesiones e ingresa |
+| POST   | `/auth/codigo`    | `{ email, via: correo\|alternativo }` → envía un código de 6 dígitos al correo principal o al alternativo verificado. Respuesta **siempre igual** |
+| POST   | `/auth/codigo/restablecer` | `{ email, via, codigo, password, password_confirmation }` → igual que `/auth/restablecer`, pero con el código |
 
 Las rutas de `/auth` sin sesión admiten 5 intentos por minuto (`429 demasiados_intentos`). El enlace de recuperación
 vence a los 60 min, sirve una sola vez y no se reenvía más de una vez por minuto al mismo correo (`config/auth.php`).
 Un enlace inválido, vencido o de otra cuenta responde siempre `400 enlace_invalido` con el mismo mensaje.
+Códigos (formas 2 y 3, `app/Servicios/CodigosVerificacion.php`): vencen a los 10 min, sirven una vez, se guardan con hash,
+máximo 3 envíos por hora por cuenta y 5 intentos fallidos (luego `429 demasiados_intentos_codigo` por 15 min). Un código
+malo, vencido o de otra forma responde `400 codigo_invalido`. Cada cambio de contraseña queda como evento `cuenta.contrasena`
+con la forma usada (`app/Servicios/CambioDeContrasena.php`).
 
 **Con sesión o token** (sin ellos: `401 no_autenticado`):
 
 | Método              | Ruta                                              | Uso                                                       |
 | ------------------- | ------------------------------------------------- | --------------------------------------------------------- |
 | POST · GET          | `/auth/logout` · `/auth/yo`                       | Cerrar sesión (o revocar el token) · datos de la cuenta   |
+| GET                 | `/cuenta/seguridad`                               | Correo principal, alternativo enmascarado (`ma***@outlook.com`), pendiente y actividad de la cuenta |
+| POST · DELETE       | `/cuenta/alternativo`                             | Agregar o cambiar `{ correo_alternativo, password_actual }` (envía código) · quitar `{ password_actual }` |
+| POST                | `/cuenta/alternativo/verificar` · `/reenviar`     | Activar con `{ codigo }` · enviar otro código. Cada paso queda como evento `cuenta.alternativo` |
 | GET · POST          | `/salones`                                        | Mis salones · crear `{ nombre, zonas?: 1..10, luces_por_zona?: 1..10 }` (máx. 20 por cuenta) |
 | GET · PATCH · DELETE | `/salones/{id}`                                  | Ver · renombrar `{ nombre }` · borrar con todo lo suyo    |
 | POST · PATCH · DELETE | `/salones/{id}/zonas` · `/zonas/{id}`           | **Configurar:** crear zona `{ nombre, luces?: 0..10, sensores?: 0..3 }` · renombrar · quitar (no la última; borra sus luces, servos, sensores y reglas propias) |
@@ -178,10 +188,10 @@ accionar(actuador, "encender" | "apagar") → completada | pendiente | fallida
 consultarPendiente(actuador)              → completada | pendiente | fallida
 ```
 
-- `DriverSimulado`: responde según lo configurado para cada servo. `DriverReal`: llega en la Fase 8
-  (por ahora toda orden responde `fallida` con el aviso).
+- `DriverSimulado`: responde según lo configurado para cada servo. `DriverReal`: deja la orden pendiente con un
+  código; la placa la lee y la confirma (ver sección 7).
 - Las lecturas de los sensores no pasan por el driver: entran por `ServicioSensores`, desde el simulador
-  o (Fase 8) desde la placa.
+  o desde la placa (`POST /api/v1/placa/lecturas`).
 
 **Respuestas del servo simulado** (configurables en `.env`):
 
@@ -225,17 +235,39 @@ Un candado evita que dos ticks procesen lo mismo a la vez.
 
 **Prueba:** `php artisan test` (las pruebas de tiempo usan un reloj simulado). A mano: ver la guía de demo en el README.
 
-## 7. Integración con hardware real (PROPUESTA, Fase 8)
+## 7. Integración con hardware real (CONFIRMADO, Fase 8)
 
-1. **Placa con WiFi (p. ej. ESP32) — pendiente de confirmar:** la placa llama a la API por HTTP
-   (reporta presencia y heartbeat) y consulta o recibe las órdenes pendientes. MQTT queda como alternativa
-   si el profesor lo exige (requiere instalar un broker como Mosquitto).
-2. **Placa por USB (p. ej. Arduino sin WiFi):** un comando de Artisan lee el puerto serie con mensajes JSON por línea. La interfaz del driver no cambia.
-3. **Tiempos y fallas:**
-   - Orden sin confirmar en `LUMICLASS_SERVO_SEGUNDOS_ESPERA` → evento de error, luz en `desconocida` y alerta (ya implementado en Fase 5).
-   - Sin heartbeat durante 30 s → sensores y servo marcados `inactivo`.
-4. **Seguridad eléctrica:** ver el aviso al inicio de este documento.
+Guía para armar y conectar: [HARDWARE.md](HARDWARE.md). Componentes CONFIRMADOS: ESP32 DevKit V1, 2 servos SG90
+(GPIO 18 y 19, 5 V externo, GND común), 2 PIR HC-SR501 (GPIO 27 y 26).
 
+1. **La placa pregunta; el servidor nunca la llama.** Por eso no hace falta conocer la IP de la placa y la del
+   servidor se escribe una vez desde el celular (portal WiFiManager "LUMICLASS-Placa", guardado en Preferences).
+2. **Clave por salón** (tabla `placas`): `lc_` + 40 caracteres aleatorios, guardada como **SHA-256** (rápido para
+   una consulta por segundo y seguro porque la clave es larga y aleatoria). Se muestra una sola vez; regenerarla
+   invalida la anterior. "Conectar placa" muestra las IP del PC (marca la del WiFi; las virtuales se etiquetan) y un
+   QR generado en el navegador con `qrcode-generator` (sin CDN).
+3. **API** (`/api/v1/placa/*`, `Authorization: Bearer <clave>`, solo con `LUMICLASS_DRIVER=real`, 240 peticiones/min):
+
+   | Método y ruta        | Cuerpo / respuesta                                                                      |
+   | -------------------- | --------------------------------------------------------------------------------------- |
+   | `POST heartbeat`     | `{"version"}` → en línea; si estaba desconectada, reactiva sensores y servos            |
+   | `POST lecturas`      | `{"lecturas":[{"sensor":1,"presencia":true}]}` → por `numero_en_placa`; evalúa reglas   |
+   | `GET ordenes`        | `{"ordenes":[{"codigo","servo","accion"}]}`; además avanza el tick                       |
+   | `POST confirmar`     | `{"codigo","resultado":"ok"/"falla","mensaje"}` → `aplicada` o `ignorada` (vieja/repetida) |
+
+4. **Órdenes:** `DriverReal::accionar` falla al instante si el salón no tiene placa o está desconectada; si no,
+   guarda `orden_codigo` y responde `pendiente`. La confirmación llama a `ServicioLuces::revisarPendiente`, que
+   pregunta al driver (`consultarPendiente` lee `confirmacion_resultado`). Sin confirmación en
+   `LUMICLASS_SERVO_SEGUNDOS_ESPERA` la luz queda `desconocida` como siempre. **"ok" = el servo se movió**: sin
+   sensor de luz no se verifica que la luz cambió.
+5. **Desconexión:** el tick (dashboard, consulta de órdenes o `schedule:work`) marca desconectada la placa sin
+   heartbeat en `LUMICLASS_PLACA_SEGUNDOS_SIN_CONTACTO` (30 s) y pasa sus sensores y servos a `inactivo`
+   (evento `placa.conexion`). Lo que estaba en `falla` no se toca.
+6. **Números en la placa:** cada sensor y servo nuevo recibe el primer `numero_en_placa` libre del salón; se cambia
+   en Configurar salón (si choca con otro, se intercambian).
+7. **Servidor:** `php artisan serve --host=0.0.0.0 --port=8001`. `PHP_CLI_SERVER_WORKERS` no funciona en Windows;
+   alternativa: Apache de WAMP (anexo de HARDWARE.md).
+8. **Seguridad eléctrica:** ver el aviso al inicio de este documento.
 ## 8. Pantallas (CONFIRMADO, Fase 6; diseño PROPUESTA)
 
 > No hay capturas de Figma en `diseno/`: el diseño es **propio (PROPUESTA)**, mobile-first. Los colores de
@@ -248,6 +280,8 @@ solo entregan la estructura; cada pantalla pide sus datos a `/api/v1` con la coo
 | Ruta web                         | Pantalla                                                                  |
 | -------------------------------- | ------------------------------------------------------------------------- |
 | `/ingresar` · `/registro`        | Cuentas (sin sesión). Con sesión llevan a `/salones`.                     |
+| `/olvide` · `/recuperar/codigo`  | Recuperar contraseña: 3 opciones; forma 1 (enlace) y formas 2 y 3 (código en 6 casillas) |
+| `/cuenta/seguridad`              | **Seguridad de mi cuenta**: correo alternativo y actividad de la cuenta   |
 | `/salones`                       | Mis salones: crear (zonas y luces por zona), renombrar, borrar            |
 | `/salones/{id}`                  | **Inicio**: ocupación, luces encendidas, sensores activos, alertas, zonas |
 | `/salones/{id}/control`          | **Control**: cada luz y cada zona, automático/manual                      |
@@ -256,13 +290,14 @@ solo entregan la estructura; cada pantalla pide sus datos a `/api/v1` con la coo
 | `/salones/{id}/historial`        | **Historial** con filtros, paginación, actualización sola y descarga CSV  |
 | `/salones/{id}/estadisticas`     | **Estadísticas**: totales, horas por día (barras apiladas + tabla) y por luz |
 | `/salones/{id}/simulador`        | **Simulador** (solo con `LUMICLASS_DRIVER=simulado`)                      |
+| `/salones/{id}/configuracion`    | **Configurar salón**: zonas, luces, sensores, números en la placa y **Conectar placa** |
 
 Sin sesión, toda página lleva a `/ingresar`; el salón de otra cuenta responde 404.
 Navegación: barra inferior en celular y barra lateral en escritorio.
 
 **Componentes reutilizables** (`resources/views/components/`): `icono` (SVG en línea, sin internet),
 `insignia-luz`, `insignia-ocupacion`, `insignia-modo`, `insignia-conexion`, `campo`, `navegacion`, `avisos`,
-`aviso-conexion`. Un componente Alpine por pantalla en `resources/js/paginas/`.
+`aviso-conexion`, `casillas-codigo`, `opciones-recuperacion`, `aviso-seguridad`. Un componente Alpine por pantalla en `resources/js/paginas/`.
 
 | Estado              | Color    | Además                        |
 | ------------------- | -------- | ----------------------------- |
