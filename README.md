@@ -9,7 +9,7 @@ Cada luz puede funcionar **simulada** o con su propio **ESP32 con relé** (CONFI
 red local o por internet. Los sensores de presencia todavía vienen del simulador.
 
 **Manuales:** [Manual de usuario](docs/MANUAL_USUARIO.md) · [Manual del programador](docs/MANUAL_PROGRAMADOR.md) ·
-[Hardware](docs/HARDWARE.md).
+[Hardware](docs/HARDWARE.md). En Word: [docs/manuales/](docs/manuales/).
 
 **Equipo:** Camilo, Marcos y Sofía.
 
