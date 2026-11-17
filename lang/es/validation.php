@@ -13,7 +13,6 @@ return [
     'confirmed' => 'La confirmación de :attribute no coincide.',
     'date' => 'El campo :attribute no es una fecha válida.',
     'date_format' => 'El campo :attribute debe tener el formato :format.',
-    'distinct' => 'El campo :attribute tiene un valor repetido.',
     'digits' => 'El campo :attribute debe tener :digits dígitos.',
     'email' => 'El campo :attribute debe ser un correo electrónico válido.',
     'enum' => 'El valor de :attribute no es válido.',

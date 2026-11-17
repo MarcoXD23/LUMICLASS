@@ -43,7 +43,7 @@
 LUMICLASS/
 ├─ app/
 │  ├─ Console/Commands/      # lumiclass:tick
-│  ├─ Drivers/               # DriverHardware + DriverSimulado + DriverReal (placa ESP32)
+│  ├─ Drivers/               # DriverHardware + DriverSimulado + DriverReal (Fase 8)
 │  ├─ Enums/                 # estados posibles: modo, luz, conexión, ocupación, orden, eventos
 │  ├─ Exceptions/            # ComandoRechazado (409)
 │  ├─ Http/
@@ -58,7 +58,7 @@ LUMICLASS/
 ├─ lang/es/                  # mensajes en español
 ├─ routes/api.php            # /api/v1/...
 ├─ tests/Feature/Api/        # pruebas de cada endpoint
-├─ firmware/lumiclass_placa/ # Programa del ESP32 (Arduino IDE) + diagram.json de Wokwi
+├─ firmware/                 # Fase 8, solo con hardware confirmado
 ├─ docs/
 └─ diseno/
 ```
@@ -80,7 +80,7 @@ salones** y puede hacer todo, pero **solo** sobre lo suyo. Un único rol (sin ad
 | `reglas`                 | id, salon_id, zona_id? (null = todas las zonas de su salón), nombre, activa, prioridad (menor = primero), condicion (JSON), accion (JSON) |
 | `eventos`                | id, salon_id, tipo, origen (`usuario`/`regla`/`sistema`/`simulador`), severidad, entidad_tipo, entidad_id, mensaje, datos, created_at |
 | `solicitudes_procesadas` | user_id + id_solicitud (únicos juntos), ruta, codigo_http, respuesta: evita ejecutar dos veces la misma orden  |
-| `personal_access_tokens` | tokens de Sanctum para scripts                                                                                 |
+| `personal_access_tokens` | tokens de Sanctum para scripts y (Fase 8) la placa                                                             |
 | `cambios_luz` · `cambios_ocupacion` | desde cuándo cada luz/zona está en cada estado: base de las estadísticas (sección 5)          |
 
 - Borrar un salón borra en cascada sus zonas, luces, servos, sensores, reglas e historial. Borrar una cuenta borra sus salones.
@@ -188,10 +188,10 @@ accionar(actuador, "encender" | "apagar") → completada | pendiente | fallida
 consultarPendiente(actuador)              → completada | pendiente | fallida
 ```
 
-- `DriverSimulado`: responde según lo configurado para cada servo. `DriverReal`: deja la orden pendiente con un
-  código; la placa la lee y la confirma (ver sección 7).
+- `DriverSimulado`: responde según lo configurado para cada servo. `DriverReal`: llega en la Fase 8
+  (por ahora toda orden responde `fallida` con el aviso).
 - Las lecturas de los sensores no pasan por el driver: entran por `ServicioSensores`, desde el simulador
-  o desde la placa (`POST /api/v1/placa/lecturas`).
+  o (Fase 8) desde la placa.
 
 **Respuestas del servo simulado** (configurables en `.env`):
 
@@ -235,39 +235,17 @@ Un candado evita que dos ticks procesen lo mismo a la vez.
 
 **Prueba:** `php artisan test` (las pruebas de tiempo usan un reloj simulado). A mano: ver la guía de demo en el README.
 
-## 7. Integración con hardware real (CONFIRMADO, Fase 8)
+## 7. Integración con hardware real (PROPUESTA, Fase 8)
 
-Guía para armar y conectar: [HARDWARE.md](HARDWARE.md). Componentes CONFIRMADOS: ESP32 DevKit V1, 2 servos SG90
-(GPIO 18 y 19, 5 V externo, GND común), 2 PIR HC-SR501 (GPIO 27 y 26).
+1. **Placa con WiFi (p. ej. ESP32) — pendiente de confirmar:** la placa llama a la API por HTTP
+   (reporta presencia y heartbeat) y consulta o recibe las órdenes pendientes. MQTT queda como alternativa
+   si el profesor lo exige (requiere instalar un broker como Mosquitto).
+2. **Placa por USB (p. ej. Arduino sin WiFi):** un comando de Artisan lee el puerto serie con mensajes JSON por línea. La interfaz del driver no cambia.
+3. **Tiempos y fallas:**
+   - Orden sin confirmar en `LUMICLASS_SERVO_SEGUNDOS_ESPERA` → evento de error, luz en `desconocida` y alerta (ya implementado en Fase 5).
+   - Sin heartbeat durante 30 s → sensores y servo marcados `inactivo`.
+4. **Seguridad eléctrica:** ver el aviso al inicio de este documento.
 
-1. **La placa pregunta; el servidor nunca la llama.** Por eso no hace falta conocer la IP de la placa y la del
-   servidor se escribe una vez desde el celular (portal WiFiManager "LUMICLASS-Placa", guardado en Preferences).
-2. **Clave por salón** (tabla `placas`): `lc_` + 40 caracteres aleatorios, guardada como **SHA-256** (rápido para
-   una consulta por segundo y seguro porque la clave es larga y aleatoria). Se muestra una sola vez; regenerarla
-   invalida la anterior. "Conectar placa" muestra las IP del PC (marca la del WiFi; las virtuales se etiquetan) y un
-   QR generado en el navegador con `qrcode-generator` (sin CDN).
-3. **API** (`/api/v1/placa/*`, `Authorization: Bearer <clave>`, solo con `LUMICLASS_DRIVER=real`, 240 peticiones/min):
-
-   | Método y ruta        | Cuerpo / respuesta                                                                      |
-   | -------------------- | --------------------------------------------------------------------------------------- |
-   | `POST heartbeat`     | `{"version"}` → en línea; si estaba desconectada, reactiva sensores y servos            |
-   | `POST lecturas`      | `{"lecturas":[{"sensor":1,"presencia":true}]}` → por `numero_en_placa`; evalúa reglas   |
-   | `GET ordenes`        | `{"ordenes":[{"codigo","servo","accion"}]}`; además avanza el tick                       |
-   | `POST confirmar`     | `{"codigo","resultado":"ok"/"falla","mensaje"}` → `aplicada` o `ignorada` (vieja/repetida) |
-
-4. **Órdenes:** `DriverReal::accionar` falla al instante si el salón no tiene placa o está desconectada; si no,
-   guarda `orden_codigo` y responde `pendiente`. La confirmación llama a `ServicioLuces::revisarPendiente`, que
-   pregunta al driver (`consultarPendiente` lee `confirmacion_resultado`). Sin confirmación en
-   `LUMICLASS_SERVO_SEGUNDOS_ESPERA` la luz queda `desconocida` como siempre. **"ok" = el servo se movió**: sin
-   sensor de luz no se verifica que la luz cambió.
-5. **Desconexión:** el tick (dashboard, consulta de órdenes o `schedule:work`) marca desconectada la placa sin
-   heartbeat en `LUMICLASS_PLACA_SEGUNDOS_SIN_CONTACTO` (30 s) y pasa sus sensores y servos a `inactivo`
-   (evento `placa.conexion`). Lo que estaba en `falla` no se toca.
-6. **Números en la placa:** cada sensor y servo nuevo recibe el primer `numero_en_placa` libre del salón; se cambia
-   en Configurar salón (si choca con otro, se intercambian).
-7. **Servidor:** `php artisan serve --host=0.0.0.0 --port=8001`. `PHP_CLI_SERVER_WORKERS` no funciona en Windows;
-   alternativa: Apache de WAMP (anexo de HARDWARE.md).
-8. **Seguridad eléctrica:** ver el aviso al inicio de este documento.
 ## 8. Pantallas (CONFIRMADO, Fase 6; diseño PROPUESTA)
 
 > No hay capturas de Figma en `diseno/`: el diseño es **propio (PROPUESTA)**, mobile-first. Los colores de
@@ -290,7 +268,6 @@ solo entregan la estructura; cada pantalla pide sus datos a `/api/v1` con la coo
 | `/salones/{id}/historial`        | **Historial** con filtros, paginación, actualización sola y descarga CSV  |
 | `/salones/{id}/estadisticas`     | **Estadísticas**: totales, horas por día (barras apiladas + tabla) y por luz |
 | `/salones/{id}/simulador`        | **Simulador** (solo con `LUMICLASS_DRIVER=simulado`)                      |
-| `/salones/{id}/configuracion`    | **Configurar salón**: zonas, luces, sensores, números en la placa y **Conectar placa** |
 
 Sin sesión, toda página lleva a `/ingresar`; el salón de otra cuenta responde 404.
 Navegación: barra inferior en celular y barra lateral en escritorio.

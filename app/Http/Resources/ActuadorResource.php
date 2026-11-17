@@ -14,7 +14,6 @@ class ActuadorResource extends JsonResource
         return [
             'id' => $this->id,
             'nombre' => $this->nombre,
-            'numero_en_placa' => $this->numero_en_placa,
             'conexion' => $this->conexion->value,
             'ocupado' => $this->ocupado,
             'ultimo_resultado' => $this->ultimo_resultado,

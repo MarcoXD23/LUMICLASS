@@ -5,8 +5,7 @@
 LUMICLASS sabe si el salón está ocupado o vacío (sensores de presencia), enciende y apaga las luces moviendo el
 interruptor de pared con un servomotor, deja controlarlas a mano desde el celular o el computador, y registra todo:
 historial, alertas y estadísticas (incluidas las horas en que las luces quedaron encendidas **con el salón vacío**).
-Funciona con **hardware simulado** (`LUMICLASS_DRIVER=simulado`) o con una **placa ESP32 real** con servos SG90 y
-sensores PIR (`LUMICLASS_DRIVER=real`): guía paso a paso en [docs/HARDWARE.md](docs/HARDWARE.md).
+Hoy funciona con **hardware simulado**; la integración con la placa real es la Fase 8.
 
 **Equipo:** Camilo, Marcos y Sofía.
 
@@ -118,10 +117,7 @@ Por defecto usa **SQLite** (un archivo dentro del proyecto). Para **MySQL de WAM
 Si el hosting no permite `php artisan migrate`, los cambios de base de datos de cada versión están en
 `database/sql/`. En **phpMyAdmin** → tu base → pestaña **SQL** → pega el archivo → **Continuar**, una sola vez.
 `cambios_hosting.sql` agrega el correo alternativo y la tabla `codigos_verificacion` (solo estructura, no borra
-datos). `fase8_placa.sql` agrega la tabla `placas` y numera sensores y servos para la placa ESP32 (**córrelo antes
-de subir la versión de la Fase 8**). Luego sube por FileZilla las carpetas cambiadas y `public/build` (compilado con
-`npm run build`). La placa necesita llegar al servidor por la red local: con el hosting en internet, usa el
-simulador o el servidor del PC (ver docs/HARDWARE.md).
+datos). Luego sube por FileZilla las carpetas cambiadas y `public/build` (compilado con `npm run build`).
 
 ## Para la presentación
 
@@ -209,7 +205,7 @@ routes/      Rutas web y de la API (/api/v1)
 database/    Migraciones y seeders
 resources/   Vistas (Blade), estilos (Tailwind) y JavaScript (Alpine)
 tests/       Pruebas: Feature (PHP), js (Vitest), navegador (Edge/Chrome)
-firmware/    Programa de la placa ESP32 (Arduino IDE) y diagrama para Wokwi
+firmware/    Código de la placa (Fase 8)
 docs/        Arquitectura, pruebas, guía de demo y guion de pruebas
 diseno/      Referencia de Figma (vacía: el diseño actual es propio, PROPUESTA)
 ```
@@ -219,4 +215,5 @@ Reglas de trabajo del equipo: [CLAUDE.md](CLAUDE.md).
 
 Construido con [Laravel](https://laravel.com) (licencia MIT), Alpine.js y Tailwind CSS.
 
-**Estado:** Fases 1–10 completadas. Fase 8: ESP32 DevKit V1, 2 servos SG90 y 2 PIR HC-SR501 (ver docs/HARDWARE.md).
+**Estado:** Fases 1–7, 9 y 10 completadas. Pendiente: Fase 8 (hardware real), cuando se confirmen la placa, los
+sensores y los servos.

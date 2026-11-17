@@ -211,10 +211,6 @@ class ServicioLuces
             'ocupado' => false,
             'orden_pendiente' => null,
             'orden_iniciada_en' => null,
-            // Driver real: una confirmación que llegue tarde ya no encuentra esta orden.
-            'orden_codigo' => null,
-            'confirmacion_resultado' => null,
-            'confirmacion_mensaje' => null,
             'ultimo_resultado' => $resultado,
         ])->save();
     }

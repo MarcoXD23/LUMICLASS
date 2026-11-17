@@ -7,7 +7,6 @@ use App\Http\Requests\GuardarSalonRequest;
 use App\Http\Resources\SalonResource;
 use App\Http\Resources\ZonaResource;
 use App\Http\RespuestaError;
-use App\Models\Placa;
 use App\Models\Salon;
 use App\Servicios\CreadorSalon;
 use App\Servicios\EstadoSalon;
@@ -74,14 +73,11 @@ class SalonController extends Controller
         // Así la demo avanza (órdenes lentas, reglas con duración) con solo tener el dashboard abierto.
         $tick->ejecutarSiCorresponde();
 
-        $salon->load(['zonas' => fn ($q) => $q->orderBy('id'), 'zonas.luces.actuador', 'zonas.sensores', 'placa']);
+        $salon->load(['zonas' => fn ($q) => $q->orderBy('id'), 'zonas.luces.actuador', 'zonas.sensores']);
 
         return response()->json([
             'data' => [
                 'salon' => ['id' => $salon->id, 'nombre' => $salon->nombre],
-                'driver' => config('lumiclass.driver'),
-                // Solo con hardware real tiene sentido hablar de la placa.
-                'placa' => config('lumiclass.driver') === 'real' ? Placa::estado($salon->placa) : null,
                 ...$estadoSalon->resumen($salon),
                 'alertas' => $estadoSalon->alertas($salon),
                 'zonas' => ZonaResource::collection($salon->zonas)->resolve(),

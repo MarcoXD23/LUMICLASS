@@ -3,12 +3,11 @@
 namespace App\Http\Requests;
 
 use App\Models\Luz;
-use App\Models\NumeroEnPlaca;
 use App\Models\Zona;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-/** POST /zonas/{zona}/luces {"nombre"} · PATCH /luces/{luz} {"nombre"?, "zona_id"?, "numero_servo"?} */
+/** POST /zonas/{zona}/luces {"nombre"} · PATCH /luces/{luz} {"nombre"?, "zona_id"?} */
 class GuardarLuzRequest extends FormRequest
 {
     public function rules(): array
@@ -27,8 +26,6 @@ class GuardarLuzRequest extends FormRequest
             ],
             // Solo se puede mover a una zona del MISMO salón.
             'zona_id' => $nuevo ? ['prohibited'] : ['sometimes', 'integer', Rule::in($zonasDelSalon->all())],
-            // Número del servo de esta luz en la placa. Si otro servo lo usa, se intercambian.
-            'numero_servo' => $nuevo ? ['prohibited'] : ['sometimes', 'integer', 'between:1,'.NumeroEnPlaca::MAXIMO],
         ];
     }
 }

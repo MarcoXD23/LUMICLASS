@@ -17,10 +17,7 @@ class Actuador extends Model
 
     protected $table = 'actuadores';
 
-    protected $fillable = [
-        'salon_id', 'nombre', 'numero_en_placa', 'conexion', 'ocupado', 'orden_pendiente', 'orden_iniciada_en', 'ultimo_resultado',
-        'orden_codigo', 'confirmacion_resultado', 'confirmacion_mensaje',
-    ];
+    protected $fillable = ['salon_id', 'nombre', 'conexion', 'ocupado', 'orden_pendiente', 'orden_iniciada_en', 'ultimo_resultado'];
 
     protected $attributes = ['conexion' => 'activo', 'ocupado' => false];
 
@@ -28,23 +25,10 @@ class Actuador extends Model
     {
         return [
             'conexion' => EstadoConexion::class,
-            'numero_en_placa' => 'integer',
             'ocupado' => 'boolean',
             'orden_pendiente' => AccionLuz::class,
             'orden_iniciada_en' => 'datetime',
         ];
-    }
-
-    /** Cada servo nuevo recibe el primer número libre de su salón: 1 = primer servo conectado a la placa. */
-    protected static function booted(): void
-    {
-        static::creating(function (Actuador $actuador) {
-            if ($actuador->numero_en_placa === null) {
-                $actuador->numero_en_placa = NumeroEnPlaca::primeroLibre(
-                    self::query()->where('salon_id', $actuador->salon_id)->pluck('numero_en_placa'),
-                );
-            }
-        });
     }
 
     /** @return BelongsTo<Salon, $this> */
