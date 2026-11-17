@@ -9,6 +9,19 @@ return [
 
     'version' => '0.1.0',
 
+    'esp32' => [
+        // Lo normal es escribir la dirección de cada ESP32 en "Configurar salón" (por luz).
+        // Esta solo se usa con LUMICLASS_DRIVER=real para las luces que no tienen dirección propia.
+        'url' => rtrim((string) env('LUMICLASS_ESP32_URL', ''), '/'),
+        // Segundos de espera de cada petición al ESP32 antes de darlo por desconectado.
+        'timeout_segundos' => (int) env('LUMICLASS_ESP32_TIMEOUT', 2),
+        // Cada cuánto se le pregunta su estado a cada ESP32 (detecta desconexiones y cambios hechos desde su página).
+        'segundos_sincronizar' => (int) env('LUMICLASS_ESP32_SEGUNDOS_SINCRONIZAR', 5),
+        // ESP32 "por internet": cada cuánto llama al servidor y sin latido en cuánto tiempo se da por desconectado.
+        'segundos_latido' => (int) env('LUMICLASS_ESP32_SEGUNDOS_LATIDO', 2),
+        'segundos_sin_latido' => (int) env('LUMICLASS_ESP32_SEGUNDOS_SIN_LATIDO', 15),
+    ],
+
     'servo' => [
         // Respuesta "lento" del simulador: segundos hasta confirmar la orden.
         'segundos_lento' => (int) env('LUMICLASS_SERVO_SEGUNDOS_LENTO', 5),

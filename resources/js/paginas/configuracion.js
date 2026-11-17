@@ -15,6 +15,10 @@ export function configuracion(salonId) {
         // Texto escrito en "Agregar luz/sensor" de cada zona: { 3: 'Luz de la ventana' }.
         nuevaLuz: {},
         nuevoSensor: {},
+        // IP del ESP32 escrita en cada luz: { 5: '192.168.18.187' }.
+        direcciones: {},
+        // Clave recién generada por luz (solo en memoria; el servidor guarda únicamente su hash).
+        claves: {},
 
         async init() {
             await this.cargar();
@@ -24,6 +28,10 @@ export function configuracion(salonId) {
             try {
                 this.zonas = (await api('GET', `/salones/${this.salonId}/zonas`)).data;
                 this.errorCarga = null;
+                // El campo muestra la IP guardada (sin "http://"), salvo lo que se esté escribiendo sin guardar.
+                for (const luz of this.zonas.flatMap((z) => z.luces)) {
+                    if (!(luz.id in this.direcciones)) this.direcciones[luz.id] = this.sinEsquema(luz.actuador?.direccion);
+                }
             } catch (error) {
                 this.errorCarga = error.message;
             } finally {
@@ -111,6 +119,100 @@ export function configuracion(salonId) {
             if (window.confirm(`¿Quitar "${luz.nombre}" y su servo? También se borran sus horas en Estadísticas.`)) {
                 this.hacer(() => api('DELETE', `/luces/${luz.id}`), 'Luz quitada.');
             }
+        },
+
+        // ---- ESP32 de cada luz ----
+        sinEsquema(direccion) {
+            return (direccion ?? '').replace(/^https?:\/\//i, '');
+        },
+
+        /** Guarda la IP (vacía = quitar el ESP32) y muestra el resultado de la prueba de conexión. */
+        async guardarEsp32(luz) {
+            const direccion = (this.direcciones[luz.id] ?? '').trim();
+            this.trabajando = true;
+            try {
+                const respuesta = await api('PATCH', `/actuadores/${luz.actuador.id}/esp32`, { direccion: direccion || null });
+                this.direcciones[luz.id] = this.sinEsquema(respuesta.data.direccion);
+                this.avisarPrueba(luz, respuesta.prueba, direccion ? null : `"${luz.nombre}" ya no usa ESP32.`);
+                await this.cargar();
+            } catch (error) {
+                const detalle = Object.values(error.erroresPorCampo?.() ?? {})[0];
+                avisar('error', detalle ?? error.message);
+            } finally {
+                this.trabajando = false;
+            }
+        },
+
+        async probarEsp32(luz) {
+            this.trabajando = true;
+            try {
+                const respuesta = await api('POST', `/actuadores/${luz.actuador.id}/esp32/probar`);
+                this.avisarPrueba(luz, respuesta.prueba);
+                await this.cargar();
+            } catch (error) {
+                avisar('error', error.message);
+            } finally {
+                this.trabajando = false;
+            }
+        },
+
+        /** Genera la clave para conectar el ESP32 por internet. La anterior deja de servir. */
+        async generarClave(luz) {
+            if (luz.actuador.conexion_esp32 === 'internet'
+                && !window.confirm(`¿Generar una clave nueva para "${luz.nombre}"? El ESP32 con la clave anterior dejará de funcionar hasta que cargues la nueva.`)) {
+                return;
+            }
+            this.trabajando = true;
+            try {
+                const respuesta = await api('POST', `/actuadores/${luz.actuador.id}/esp32/clave`);
+                this.claves[luz.id] = respuesta.conexion;
+                this.direcciones[luz.id] = '';
+                avisar('exito', `Clave creada. Cópiala en el sketch y carga el sketch al ESP32.`);
+                await this.cargar();
+            } catch (error) {
+                avisar('error', error.message);
+            } finally {
+                this.trabajando = false;
+            }
+        },
+
+        quitarEsp32(luz) {
+            if (window.confirm(`¿Quitar el ESP32 de "${luz.nombre}"? La luz volverá a usar el simulador.`)) {
+                delete this.claves[luz.id];
+                this.direcciones[luz.id] = '';
+                this.hacer(() => api('DELETE', `/actuadores/${luz.actuador.id}/esp32`), `"${luz.nombre}" ya no usa ESP32.`);
+            }
+        },
+
+        textoEsp32(actuador) {
+            if (!actuador?.conexion_esp32) return '';
+            const conectado = actuador.conexion === 'activo';
+            if (actuador.conexion_esp32 === 'local') {
+                return conectado ? `Conectado a ${this.sinEsquema(actuador.direccion)}` : `Sin respuesta de ${this.sinEsquema(actuador.direccion)}`;
+            }
+            if (conectado) return 'Conectado por internet';
+
+            return actuador.ultima_respuesta ? 'Por internet: sin conexión' : 'Por internet: esperando al ESP32';
+        },
+
+        snippetClave(conexion) {
+            if (!conexion) return '';
+
+            return `const char* SERVIDOR = "${conexion.servidor}";\nconst char* CLAVE    = "${conexion.clave}";`;
+        },
+
+        async copiar(texto) {
+            try {
+                await navigator.clipboard.writeText(texto);
+                avisar('exito', 'Copiado.');
+            } catch {
+                avisar('error', 'No se pudo copiar: selecciona el texto y cópialo a mano.');
+            }
+        },
+
+        avisarPrueba(luz, prueba, sinPrueba = null) {
+            if (!prueba) return sinPrueba && avisar('exito', sinPrueba);
+            avisar(prueba.conectado ? 'exito' : 'error', `"${luz.nombre}": ${prueba.mensaje}`);
         },
 
         // ---- Sensores ----

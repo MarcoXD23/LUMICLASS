@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ConfiguracionController;
+use App\Http\Controllers\Api\DispositivoController;
+use App\Http\Controllers\Api\Esp32Controller;
 use App\Http\Controllers\Api\EstadisticaController;
 use App\Http\Controllers\Api\EventoController;
 use App\Http\Controllers\Api\LuzController;
@@ -47,6 +49,9 @@ Route::prefix('v1')->name('api.')->group(function () {
         Route::post('auth/restablecer', [AuthController::class, 'restablecer']);
     });
 
+    // Lo llama el ESP32 "por internet" con su clave (no usa sesión). 240/min: varias placas detrás del mismo router.
+    Route::post('dispositivo/latido', [DispositivoController::class, 'latido'])->middleware('throttle:240,1');
+
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('auth/logout', [AuthController::class, 'logout']);
         Route::get('auth/yo', [AuthController::class, 'yo']);
@@ -76,6 +81,12 @@ Route::prefix('v1')->name('api.')->group(function () {
             Route::patch('sensores/{sensor}', 'renombrarSensor');
             Route::delete('sensores/{sensor}', 'quitarSensor');
         });
+        // ESP32 de cada luz: guardar su dirección (IP) y probar la conexión.
+        Route::patch('actuadores/{actuador}/esp32', [Esp32Controller::class, 'guardar']);
+        Route::post('actuadores/{actuador}/esp32/probar', [Esp32Controller::class, 'probar']);
+        Route::post('actuadores/{actuador}/esp32/clave', [Esp32Controller::class, 'generarClave']);
+        Route::delete('actuadores/{actuador}/esp32', [Esp32Controller::class, 'quitar']);
+
         Route::patch('zonas/{zona}/modo', [ZonaController::class, 'modo']);
         Route::post('zonas/{zona}/comando', [ZonaController::class, 'comando']);
 
