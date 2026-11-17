@@ -16,8 +16,6 @@
             </button>
         </div>
 
-        <x-estado-placa :enlace="route('salones.configuracion', $salon)" />
-
         <p x-show="cargando" class="text-sm text-slate-500">Cargando…</p>
 
         <template x-if="estado">

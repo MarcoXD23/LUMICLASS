@@ -21,7 +21,7 @@ class LumiclassTick extends Command
             return self::SUCCESS;
         }
 
-        $this->info("Órdenes pendientes revisadas: {$resultado['pendientes_revisadas']}. Órdenes enviadas por reglas: {$resultado['ordenes_reglas']}. Placas desconectadas: {$resultado['placas_desconectadas']}.");
+        $this->info("Órdenes pendientes revisadas: {$resultado['pendientes_revisadas']}. Órdenes enviadas por reglas: {$resultado['ordenes_reglas']}.");
 
         return self::SUCCESS;
     }

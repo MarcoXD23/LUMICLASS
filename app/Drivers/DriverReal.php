@@ -4,22 +4,14 @@ namespace App\Drivers;
 
 use App\Enums\AccionLuz;
 use App\Models\Actuador;
-use App\Models\Placa;
-use Illuminate\Support\Str;
 
 /**
- * Servos reales en la placa ESP32 del salón (Fase 8). La placa no recibe conexiones: ella pregunta.
- * accionar() deja la orden pendiente con un código; la placa la lee en GET /placa/ordenes,
- * mueve el servo y responde en POST /placa/confirmar. consultarPendiente() lee esa respuesta.
- * Si no hay respuesta, ServicioLuces vence la orden con el tiempo de espera de siempre.
- *
- * "ok" significa que el servo se movió. Sin un sensor de luz no se puede saber si la luz prendió.
+ * Mueve la luz con el ESP32 del actuador (su "direccion") o, si no tiene, con LUMICLASS_ESP32_URL.
+ * El ESP32 responde al instante con el estado del relé: esa respuesta es la confirmación.
  */
 class DriverReal implements DriverHardware
 {
-    public const RESULTADO_OK = 'ok';
-
-    public const RESULTADO_FALLA = 'falla';
+    public function __construct(private readonly ClienteEsp32 $esp32) {}
 
     public function nombre(): string
     {
@@ -28,36 +20,43 @@ class DriverReal implements DriverHardware
 
     public function accionar(Actuador $actuador, AccionLuz $accion): RespuestaActuador
     {
-        /** @var Placa|null $placa */
-        $placa = Placa::query()->where('salon_id', $actuador->salon_id)->first();
+        $direccion = $this->direccion($actuador);
 
-        if ($placa === null) {
-            return RespuestaActuador::fallida('Este salón no tiene placa. Conéctala en "Configurar salón" → "Conectar placa".');
+        if ($direccion === null) {
+            return RespuestaActuador::fallida('La luz no tiene la dirección de su ESP32. Escríbela en Configurar salón.');
         }
 
-        if (! $placa->estaEnLinea()) {
-            return RespuestaActuador::fallida('La placa del salón está desconectada; la orden no se envió.');
+        $encender = $accion === AccionLuz::Encender;
+        $confirmado = $this->esp32->ordenar($direccion, $encender);
+
+        if ($confirmado === null) {
+            return RespuestaActuador::fallida("El ESP32 ({$direccion}) no responde. Revisa que esté encendido y en la misma red WiFi.");
         }
 
-        if ($actuador->numero_en_placa === null) {
-            return RespuestaActuador::fallida("El servo \"{$actuador->nombre}\" no tiene número en la placa.");
-        }
+        $actuador->forceFill(['ultima_respuesta_en' => now()]);
 
-        $actuador->fill([
-            'orden_codigo' => Str::lower(Str::random(12)),
-            'confirmacion_resultado' => null,
-            'confirmacion_mensaje' => null,
-        ])->save();
-
-        return RespuestaActuador::pendiente('Orden enviada a la placa; esperando que el servo se mueva.');
+        return $confirmado === $encender
+            ? RespuestaActuador::completada('El ESP32 confirmó la orden.')
+            : RespuestaActuador::fallida('El ESP32 respondió, pero el relé no cambió de estado.');
     }
 
     public function consultarPendiente(Actuador $actuador): RespuestaActuador
     {
-        return match ($actuador->confirmacion_resultado) {
-            self::RESULTADO_OK => RespuestaActuador::completada('La placa confirmó que el servo se movió (sin sensor de luz no se verifica que la luz cambió).'),
-            self::RESULTADO_FALLA => RespuestaActuador::fallida('La placa informó una falla: '.($actuador->confirmacion_mensaje ?: 'sin detalle').'.'),
-            default => RespuestaActuador::pendiente(),
+        $direccion = $this->direccion($actuador);
+        $esperado = $actuador->orden_pendiente === AccionLuz::Encender;
+        $estado = $direccion === null ? null : $this->esp32->estado($direccion);
+
+        return match (true) {
+            $estado === null => RespuestaActuador::pendiente(),
+            $estado === $esperado => RespuestaActuador::completada('El ESP32 confirmó la orden.'),
+            default => RespuestaActuador::fallida('El ESP32 respondió, pero el relé no cambió de estado.'),
         };
+    }
+
+    private function direccion(Actuador $actuador): ?string
+    {
+        $direccion = $actuador->direccion ?: config('lumiclass.esp32.url');
+
+        return $direccion !== '' ? $direccion : null;
     }
 }

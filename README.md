@@ -2,17 +2,20 @@
 
 **Sistema inteligente de control y monitoreo de iluminación de un salón de clases.**
 
-LUMICLASS sabe si el salón está ocupado o vacío (sensores de presencia), enciende y apaga las luces moviendo el
-interruptor de pared con un servomotor, deja controlarlas a mano desde el celular o el computador, y registra todo:
-historial, alertas y estadísticas (incluidas las horas en que las luces quedaron encendidas **con el salón vacío**).
-Funciona con **hardware simulado** (`LUMICLASS_DRIVER=simulado`) o con una **placa ESP32 real** con servos SG90 y
-sensores PIR (`LUMICLASS_DRIVER=real`): guía paso a paso en [docs/HARDWARE.md](docs/HARDWARE.md).
+LUMICLASS sabe si el salón está ocupado o vacío (sensores de presencia), enciende y apaga las luces, deja
+controlarlas a mano desde el celular o el computador, y registra todo: historial, alertas y estadísticas (incluidas las
+horas en que las luces quedaron encendidas **con el salón vacío**).
+Cada luz puede funcionar **simulada** o con su propio **ESP32 con relé** (CONFIRMADO, diseño de Sofía), conectado por la
+red local o por internet. Los sensores de presencia todavía vienen del simulador.
+
+**Manuales:** [Manual de usuario](docs/MANUAL_USUARIO.md) · [Manual del programador](docs/MANUAL_PROGRAMADOR.md) ·
+[Hardware](docs/HARDWARE.md). En Word: [docs/manuales/](docs/manuales/).
 
 **Equipo:** Camilo, Marcos y Sofía.
 
-> ⚠️ **Seguridad eléctrica:** los servomotores **solo accionan el interruptor de pared de forma mecánica** (con un
-> soporte impreso o de madera). **Nunca** se conectan a la corriente de red (110/220 V). La placa y los servos usan su
-> propia fuente de 5 V.
+> ⚠️ **Seguridad eléctrica:** no se toca la instalación eléctrica del salón. El relé del ESP32 se usa con una
+> **lámpara o tira LED de bajo voltaje (5–12 V)** en una maqueta propia. Conectar el relé a un bombillo de 110/220 V
+> solo con la supervisión de un profesor o electricista. Ver [docs/HARDWARE.md](docs/HARDWARE.md).
 
 | Celular | Computador |
 | ------- | ---------- |
@@ -38,7 +41,7 @@ azul vacío, rojo falla, naranja desconocido.
 
 ## Requisitos
 
-- [PHP](https://www.php.net/) 8.3 o superior (probado con PHP 8.4 en Windows 11) y [Composer](https://getcomposer.org/) 2.
+- [PHP](https://www.php.net/) **8.4** o superior (Symfony 8 lo exige; probado en Windows 11) y [Composer](https://getcomposer.org/) 2.
 - [Node.js](https://nodejs.org/) 20 o superior (para compilar la interfaz).
 - Git. Opcional: MySQL (por ejemplo el de WAMP); si no, se usa SQLite, que no requiere instalar nada.
 
@@ -117,11 +120,29 @@ Por defecto usa **SQLite** (un archivo dentro del proyecto). Para **MySQL de WAM
 
 Si el hosting no permite `php artisan migrate`, los cambios de base de datos de cada versión están en
 `database/sql/`. En **phpMyAdmin** → tu base → pestaña **SQL** → pega el archivo → **Continuar**, una sola vez.
-`cambios_hosting.sql` agrega el correo alternativo y la tabla `codigos_verificacion` (solo estructura, no borra
-datos). `fase8_placa.sql` agrega la tabla `placas` y numera sensores y servos para la placa ESP32 (**córrelo antes
-de subir la versión de la Fase 8**). Luego sube por FileZilla las carpetas cambiadas y `public/build` (compilado con
-`npm run build`). La placa necesita llegar al servidor por la red local: con el hosting en internet, usa el
-simulador o el servidor del PC (ver docs/HARDWARE.md).
+`cambios_hosting.sql` agrega el correo alternativo y la tabla `codigos_verificacion`, y luego `esp32_sofia.sql`
+agrega las columnas del ESP32 de cada luz (solo estructura, no borran datos; cada uno una sola vez y en ese orden). Luego sube por FileZilla las carpetas cambiadas y `public/build` (compilado con `npm run build`).
+
+### Conectar el ESP32 (bombillo con relé)
+
+**Desde el hosting (por internet):** el hosting no puede llamar a una IP como `192.168.18.187` (solo existe dentro
+de tu WiFi), así que es el ESP32 el que llama al hosting.
+
+1. Sube los cambios al hosting y ejecuta allí las migraciones (`php artisan migrate`).
+2. En el `.env` del hosting, `APP_URL` debe ser la dirección pública con `https://` (es la que se copia al sketch).
+3. En LUMICLASS: **Configurar salón** → la luz → **Conectar por internet (hosting)**. Copia `SERVIDOR` y `CLAVE`
+   (la clave se muestra una sola vez; si la pierdes, genera otra).
+4. Abre `firmware/lumiclass_esp32/lumiclass_esp32.ino`, pega esos dos valores y tu red WiFi, y cárgalo al ESP32.
+   El Serial Monitor (115200) muestra `LUMICLASS: conectado`; en la app la luz pasa a "Conectado por internet".
+
+No subas a GitHub el sketch con tu clave ni tu contraseña WiFi reales.
+
+> Algunos hostings gratuitos ponen una verificación anti-bots (una página con JavaScript) delante del sitio: el
+> ESP32 no puede pasarla y el Serial Monitor muestra un error distinto de 200. Si pasa, hay que usar un hosting sin
+> esa protección.
+
+**En el PC (misma red WiFi):** en la luz, escribe la IP que muestra el Serial Monitor en "IP en la red local" y pulsa
+**Guardar**. Sirve con el sketch original o con el nuevo.
 
 ## Para la presentación
 
@@ -209,8 +230,8 @@ routes/      Rutas web y de la API (/api/v1)
 database/    Migraciones y seeders
 resources/   Vistas (Blade), estilos (Tailwind) y JavaScript (Alpine)
 tests/       Pruebas: Feature (PHP), js (Vitest), navegador (Edge/Chrome)
-firmware/    Programa de la placa ESP32 (Arduino IDE) y diagrama para Wokwi
-docs/        Arquitectura, pruebas, guía de demo y guion de pruebas
+firmware/    Sketch del ESP32 con relé (firmware/lumiclass_esp32)
+docs/        Manuales, arquitectura, hardware, pruebas, guía de demo y guion de pruebas
 diseno/      Referencia de Figma (vacía: el diseño actual es propio, PROPUESTA)
 ```
 
@@ -219,4 +240,5 @@ Reglas de trabajo del equipo: [CLAUDE.md](CLAUDE.md).
 
 Construido con [Laravel](https://laravel.com) (licencia MIT), Alpine.js y Tailwind CSS.
 
-**Estado:** Fases 1–10 completadas. Fase 8: ESP32 DevKit V1, 2 servos SG90 y 2 PIR HC-SR501 (ver docs/HARDWARE.md).
+**Estado:** Fases 1–10 completadas. La Fase 8 (hardware real) es el ESP32 con relé por luz. Pendiente: sensores PIR
+conectados a un ESP32 (hoy la presencia viene del simulador).

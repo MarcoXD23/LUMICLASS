@@ -59,7 +59,6 @@ abre la carpeta como `c:\...` (VS Code a veces lo hace), Node carga Vitest dos v
 | `formato.test.js`    | Duraciones, "hace X", textos de reglas                                                |
 | `mezclar.test.js`    | Los getters de Alpine siguen vivos al combinar componentes                            |
 | `reglas.test.js`     | Editar una regla no cambia su duración en segundos                                    |
-| `conectarPlaca.test.js` | Código de conexión de la placa y QR generado sin internet                          |
 
 ## 3. Navegador — `npm run prueba:navegador` (`tests/navegador/recorrido.mjs`)
 

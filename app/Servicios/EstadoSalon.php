@@ -63,7 +63,14 @@ class EstadoSalon
                     'entidad_id' => $luz->id,
                 ];
             } elseif ($actuador->conexion !== EstadoConexion::Activo) {
-                $alertas[] = $this->alertaConexion($actuador->conexion, "Servo \"{$actuador->nombre}\" {$actuador->conexion->value}.", 'actuador', $actuador->id);
+                $alertas[] = $this->alertaConexion(
+                    $actuador->conexion,
+                    $actuador->tieneEsp32()
+                        ? "El ESP32 de la luz \"{$luz->nombre}\"".($actuador->esp32Local() ? " ({$actuador->direccion})" : '').' no responde.'
+                        : "Servo \"{$actuador->nombre}\" {$actuador->conexion->value}.",
+                    'actuador',
+                    $actuador->id,
+                );
             } elseif ($luz->estado_real === EstadoLuz::Desconocida && $actuador->ultimo_resultado !== null && $actuador->ultimo_resultado !== 'ok') {
                 // La última orden falló o no tuvo respuesta: no sabemos si la luz está encendida.
                 $alertas[] = [

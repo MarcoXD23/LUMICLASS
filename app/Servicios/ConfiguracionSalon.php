@@ -178,49 +178,6 @@ class ConfiguracionSalon
         $this->registrar($zona->salon, null, "Sensor \"{$nombre}\" quitado de \"{$zona->nombre}\".");
     }
 
-    /** Cambia el número del PIR en la placa. Si otro sensor del salón lo tenía, se intercambian. */
-    public function cambiarNumeroSensor(Sensor $sensor, int $numero): void
-    {
-        $anterior = $sensor->numero_en_placa;
-        if ($anterior === $numero) {
-            return;
-        }
-
-        $salon = $sensor->zona->salon;
-        DB::transaction(function () use ($sensor, $numero, $anterior, $salon) {
-            $otro = $salon->sensores()->where('sensores.numero_en_placa', $numero)->first();
-            $otro?->update(['numero_en_placa' => $anterior]);
-            $sensor->update(['numero_en_placa' => $numero]);
-
-            $this->registrar($salon, $sensor, "Sensor \"{$sensor->nombre}\" ahora es el PIR {$numero} de la placa"
-                .($otro ? "; \"{$otro->nombre}\" pasa a ser el {$anterior}." : '.'));
-        });
-    }
-
-    /** Cambia el número del servo de la luz en la placa. Si otro servo del salón lo tenía, se intercambian. */
-    public function cambiarNumeroServo(Luz $luz, int $numero): void
-    {
-        $servo = $luz->actuador;
-        if ($servo === null || $servo->numero_en_placa === $numero) {
-            return;
-        }
-        $this->exigirServosLibres(collect([$luz]));
-
-        $anterior = $servo->numero_en_placa;
-        $salon = $servo->salon;
-        DB::transaction(function () use ($servo, $numero, $anterior, $salon, $luz) {
-            $otro = $salon->actuadores()->where('numero_en_placa', $numero)->where('id', '!=', $servo->id)->first();
-            if ($otro?->ocupado) {
-                throw new ComandoRechazado('actuador_ocupado', "El servo \"{$otro->nombre}\" está ejecutando una orden. Espera unos segundos e intenta de nuevo.");
-            }
-            $otro?->update(['numero_en_placa' => $anterior]);
-            $servo->update(['numero_en_placa' => $numero]);
-
-            $this->registrar($salon, $luz, "La luz \"{$luz->nombre}\" ahora usa el servo {$numero} de la placa"
-                .($otro ? "; el que lo usaba pasa al {$anterior}." : '.'));
-        });
-    }
-
     private function crearLuz(Zona $zona, string $nombre): Luz
     {
         $servo = $zona->salon->actuadores()->create(['nombre' => 'Servo '.$this->siguienteServo($zona->salon)]);

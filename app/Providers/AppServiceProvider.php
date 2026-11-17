@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Drivers\DriverHardware;
 use App\Drivers\DriverReal;
+use App\Drivers\DriverRemoto;
+use App\Drivers\DriverSegunActuador;
 use App\Drivers\DriverSimulado;
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
@@ -18,11 +20,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->bind(DriverHardware::class, fn ($app) => match (config('lumiclass.driver')) {
-            'simulado' => $app->make(DriverSimulado::class),
-            'real' => $app->make(DriverReal::class),
-            default => throw new InvalidArgumentException('LUMICLASS_DRIVER debe ser "simulado" o "real".'),
-        });
+        // Las luces con ESP32 propio usan el hardware real; las demás, el driver del .env.
+        $this->app->bind(DriverHardware::class, fn ($app) => new DriverSegunActuador(
+            match (config('lumiclass.driver')) {
+                'simulado' => $app->make(DriverSimulado::class),
+                'real' => $app->make(DriverReal::class),
+                default => throw new InvalidArgumentException('LUMICLASS_DRIVER debe ser "simulado" o "real".'),
+            },
+            $app->make(DriverReal::class),
+            $app->make(DriverRemoto::class),
+        ));
     }
 
     /**

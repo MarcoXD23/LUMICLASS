@@ -2,7 +2,7 @@
 
 Sistema inteligente de control y monitoreo de iluminación de un salón de clases.
 Proyecto universitario de Camilo, Marcos y Sofía. Aplicación web (frontend + backend + API + base de datos)
-que usa sensores de presencia y servomotores. Funciona primero con hardware simulado y luego con el real.
+que usa sensores de presencia y, por cada luz, un ESP32 con relé (diseño definitivo de Sofía). Funciona con hardware simulado y con el real.
 
 ## Reglas fijas (valen en todas las fases)
 
@@ -15,7 +15,7 @@ que usa sensores de presencia y servomotores. Funciona primero con hardware simu
 7. Al cerrar cada fase: ejecutar pruebas, compilación y revisión de errores; corregir y volver a probar. Resumir en máximo 10 líneas: qué se hizo, archivos creados/modificados, cómo probarlo, qué falta.
 8. Git: ramas por fase o funcionalidad (`feature/...`). Indicar los comandos y la rama sugerida. NO hacer push ni comandos destructivos sin preguntar.
 9. Windows debe ser plataforma soportada; instalación en pocos comandos.
-10. Seguridad eléctrica: los servos solo accionan el interruptor mecánicamente, nunca se conectan a la corriente de red. Recordarlo en la documentación.
+10. Seguridad eléctrica: no se toca la instalación del salón. El relé del ESP32 maneja una lámpara de bajo voltaje (5–12 V) en una maqueta; 110/220 V solo con supervisión de un profesor o electricista. Recordarlo en la documentación (docs/HARDWARE.md).
 
 ## Diseño
 
@@ -50,4 +50,4 @@ Debe distinguirse a simple vista: ocupado/vacío, luces on/off, automático/manu
 9. Pruebas completas y corrección de errores.
 10. Preparación de la presentación: README, guía de demo, guion de pruebas.
 
-Estado actual: Fases 1–10 completadas en Laravel 13 (puerto 8001, cookie lumiclass_session): API /api/v1 con cuentas multiusuario (Sanctum), simulador, motor de reglas, estadísticas, historial CSV e interfaz Blade + Alpine + Tailwind con diseño propio PROPUESTA (no hay capturas en `diseno/`). Base de datos: MySQL de WAMP (puerto 3308, InnoDB) en el equipo del usuario; SQLite sigue siendo opción. Pruebas: php artisan test, npm run prueba:js y npm run prueba:navegador (docs/PRUEBAS.md). Presentación: php artisan lumiclass:demo, docs/GUIA_DEMO.md y docs/GUION_PRUEBAS.md. Recuperar contraseña de 3 formas: enlace, código de 6 dígitos y correo alternativo verificado (MAIL_MAILER=log por defecto; Gmail documentado en el README), pantalla "Seguridad de mi cuenta" y pantalla "Configurar salón" (zonas, luces con servo y sensores). Hosting sin terminal: SQL para phpMyAdmin en database/sql/cambios_hosting.sql. El proyecto Node anterior está en el commit d4e4b20. Fase 8 (rama feature/fase-8-hardware): ESP32 DevKit V1 + 2 SG90 (GPIO 18/19) + 2 PIR HC-SR501 (GPIO 27/26) CONFIRMADOS; API /api/v1/placa (clave por salón con hash SHA-256), DriverReal por órdenes pendientes, "Conectar placa" con QR, firmware en firmware/lumiclass_placa (WiFiManager, ArduinoJson, ESP32Servo) y guía docs/HARDWARE.md; SQL de hosting database/sql/fase8_placa.sql. Pendiente: capturas de Figma si existen.
+Estado actual: Fases 1–10 completadas en Laravel 13 (PHP 8.4, puerto 8001, cookie lumiclass_session): API /api/v1 con cuentas multiusuario (Sanctum), simulador, motor de reglas, estadísticas, historial CSV e interfaz Blade + Alpine + Tailwind con diseño propio PROPUESTA (no hay capturas en `diseno/`). Hardware (Fase 8, CONFIRMADO, diseño de Sofía): cada luz con su ESP32 con relé, por IP local (`DriverReal` + `ClienteEsp32`) o por internet (`DriverRemoto`, latido en /api/v1/dispositivo/latido); `DriverSegunActuador` elige por luz y las luces sin ESP32 usan el driver del .env. La primera Fase 8 (placa por salón con servos, commit 0a373b3) se retiró; la migración 2026_11_18_000001 limpia sus tablas. Base de datos: MySQL de WAMP (puerto 3308, InnoDB) en el equipo del usuario; SQLite sigue siendo opción. Pruebas: php artisan test, npm run prueba:js y npm run prueba:navegador (docs/PRUEBAS.md). Recuperar contraseña de 3 formas (enlace, código de 6 dígitos y correo alternativo verificado), "Seguridad de mi cuenta", "Configurar salón" (zonas, luces, sensores y ESP32 de cada luz) y comando lumiclass:cambiar-contrasena. Hosting sin terminal: SQL para phpMyAdmin en database/sql/ (cambios_hosting.sql y luego esp32_sofia.sql). Manuales: docs/MANUAL_USUARIO.md y docs/MANUAL_PROGRAMADOR.md; hardware: docs/HARDWARE.md. Pendiente: sensores PIR conectados a un ESP32 (hoy la presencia viene del simulador) y capturas de Figma si existen.

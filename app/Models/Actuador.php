@@ -17,34 +17,22 @@ class Actuador extends Model
 
     protected $table = 'actuadores';
 
-    protected $fillable = [
-        'salon_id', 'nombre', 'numero_en_placa', 'conexion', 'ocupado', 'orden_pendiente', 'orden_iniciada_en', 'ultimo_resultado',
-        'orden_codigo', 'confirmacion_resultado', 'confirmacion_mensaje',
-    ];
+    protected $fillable = ['salon_id', 'nombre', 'direccion', 'conexion', 'ocupado', 'orden_pendiente', 'orden_iniciada_en', 'ultimo_resultado', 'ultima_respuesta_en', 'estado_reportado'];
 
     protected $attributes = ['conexion' => 'activo', 'ocupado' => false];
+
+    protected $hidden = ['clave_hash'];
 
     protected function casts(): array
     {
         return [
             'conexion' => EstadoConexion::class,
-            'numero_en_placa' => 'integer',
             'ocupado' => 'boolean',
             'orden_pendiente' => AccionLuz::class,
             'orden_iniciada_en' => 'datetime',
+            'ultima_respuesta_en' => 'datetime',
+            'estado_reportado' => 'boolean',
         ];
-    }
-
-    /** Cada servo nuevo recibe el primer número libre de su salón: 1 = primer servo conectado a la placa. */
-    protected static function booted(): void
-    {
-        static::creating(function (Actuador $actuador) {
-            if ($actuador->numero_en_placa === null) {
-                $actuador->numero_en_placa = NumeroEnPlaca::primeroLibre(
-                    self::query()->where('salon_id', $actuador->salon_id)->pluck('numero_en_placa'),
-                );
-            }
-        });
     }
 
     /** @return BelongsTo<Salon, $this> */
@@ -57,6 +45,39 @@ class Actuador extends Model
     public function luz(): HasOne
     {
         return $this->hasOne(Luz::class);
+    }
+
+    /** true si esta luz se mueve con un ESP32 propio (por IP local o por internet). */
+    public function tieneEsp32(): bool
+    {
+        return $this->esp32Local() || $this->esp32PorInternet();
+    }
+
+    /** El servidor llama al ESP32 por su IP: solo sirve si ambos están en la misma red (p. ej. en el PC). */
+    public function esp32Local(): bool
+    {
+        return filled($this->direccion);
+    }
+
+    /** El ESP32 llama al servidor con su clave: sirve desde el hosting. */
+    public function esp32PorInternet(): bool
+    {
+        return filled($this->clave_hash);
+    }
+
+    /** "local", "internet" o null. */
+    public function conexionEsp32(): ?string
+    {
+        return match (true) {
+            $this->esp32PorInternet() => 'internet',
+            $this->esp32Local() => 'local',
+            default => null,
+        };
+    }
+
+    public static function hashClave(string $clave): string
+    {
+        return hash('sha256', $clave);
     }
 
     public function scopeDelUsuario(Builder $query, ?int $userId): void

@@ -1,21 +1,19 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\ConexionPlacaController;
 use App\Http\Controllers\Api\ConfiguracionController;
 use App\Http\Controllers\Api\CuentaController;
+use App\Http\Controllers\Api\DispositivoController;
+use App\Http\Controllers\Api\Esp32Controller;
 use App\Http\Controllers\Api\EstadisticaController;
 use App\Http\Controllers\Api\EventoController;
 use App\Http\Controllers\Api\LuzController;
-use App\Http\Controllers\Api\PlacaController;
 use App\Http\Controllers\Api\ReglaController;
 use App\Http\Controllers\Api\SalonController;
 use App\Http\Controllers\Api\SaludController;
 use App\Http\Controllers\Api\SensorController;
 use App\Http\Controllers\Api\SimuladorController;
 use App\Http\Controllers\Api\ZonaController;
-use App\Http\Middleware\AutenticarPlaca;
-use App\Http\Middleware\SoloDriverReal;
 use App\Http\Middleware\SoloSimulador;
 use App\Models\Actuador;
 use App\Models\Luz;
@@ -55,14 +53,8 @@ Route::prefix('v1')->name('api.')->group(function () {
         Route::post('auth/codigo/restablecer', [AuthController::class, 'restablecerConCodigo']);
     });
 
-    // API de la placa ESP32: la clave de la placa reemplaza a la sesión. 240/min: la placa pide ~70.
-    Route::prefix('placa')->middleware([SoloDriverReal::class, AutenticarPlaca::class, 'throttle:240,1'])
-        ->controller(PlacaController::class)->group(function () {
-            Route::post('heartbeat', 'heartbeat');
-            Route::post('lecturas', 'lecturas');
-            Route::get('ordenes', 'ordenes');
-            Route::post('confirmar', 'confirmar');
-        });
+    // Lo llama el ESP32 "por internet" con su clave (no usa sesión). 240/min: varias placas detrás del mismo router.
+    Route::post('dispositivo/latido', [DispositivoController::class, 'latido'])->middleware('throttle:240,1');
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('auth/logout', [AuthController::class, 'logout']);
@@ -102,9 +94,11 @@ Route::prefix('v1')->name('api.')->group(function () {
             Route::patch('sensores/{sensor}', 'renombrarSensor');
             Route::delete('sensores/{sensor}', 'quitarSensor');
         });
-        // Conectar placa: estado, direcciones del PC y clave (se muestra una sola vez).
-        Route::get('salones/{salon}/placa', [ConexionPlacaController::class, 'show']);
-        Route::post('salones/{salon}/placa/clave', [ConexionPlacaController::class, 'generarClave']);
+        // ESP32 de cada luz: guardar su dirección (IP) y probar la conexión.
+        Route::patch('actuadores/{actuador}/esp32', [Esp32Controller::class, 'guardar']);
+        Route::post('actuadores/{actuador}/esp32/probar', [Esp32Controller::class, 'probar']);
+        Route::post('actuadores/{actuador}/esp32/clave', [Esp32Controller::class, 'generarClave']);
+        Route::delete('actuadores/{actuador}/esp32', [Esp32Controller::class, 'quitar']);
 
         Route::patch('zonas/{zona}/modo', [ZonaController::class, 'modo']);
         Route::post('zonas/{zona}/comando', [ZonaController::class, 'comando']);
