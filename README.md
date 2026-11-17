@@ -119,6 +119,27 @@ Si el hosting no permite `php artisan migrate`, los cambios de base de datos de 
 `cambios_hosting.sql` agrega el correo alternativo y la tabla `codigos_verificacion` (solo estructura, no borra
 datos). Luego sube por FileZilla las carpetas cambiadas y `public/build` (compilado con `npm run build`).
 
+### Conectar el ESP32 (bombillo con relé)
+
+**Desde el hosting (por internet):** el hosting no puede llamar a una IP como `192.168.18.187` (solo existe dentro
+de tu WiFi), así que es el ESP32 el que llama al hosting.
+
+1. Sube los cambios al hosting y ejecuta allí las migraciones (`php artisan migrate`).
+2. En el `.env` del hosting, `APP_URL` debe ser la dirección pública con `https://` (es la que se copia al sketch).
+3. En LUMICLASS: **Configurar salón** → la luz → **Conectar por internet (hosting)**. Copia `SERVIDOR` y `CLAVE`
+   (la clave se muestra una sola vez; si la pierdes, genera otra).
+4. Abre `firmware/lumiclass_esp32/lumiclass_esp32.ino`, pega esos dos valores y tu red WiFi, y cárgalo al ESP32.
+   El Serial Monitor (115200) muestra `LUMICLASS: conectado`; en la app la luz pasa a "Conectado por internet".
+
+No subas a GitHub el sketch con tu clave ni tu contraseña WiFi reales.
+
+> Algunos hostings gratuitos ponen una verificación anti-bots (una página con JavaScript) delante del sitio: el
+> ESP32 no puede pasarla y el Serial Monitor muestra un error distinto de 200. Si pasa, hay que usar un hosting sin
+> esa protección.
+
+**En el PC (misma red WiFi):** en la luz, escribe la IP que muestra el Serial Monitor en "IP en la red local" y pulsa
+**Guardar**. Sirve con el sketch original o con el nuevo.
+
 ## Para la presentación
 
 ```

@@ -237,9 +237,24 @@ Un candado evita que dos ticks procesen lo mismo a la vez.
 
 ## 7. Integración con hardware real (PROPUESTA, Fase 8)
 
-1. **Placa con WiFi (p. ej. ESP32) — pendiente de confirmar:** la placa llama a la API por HTTP
-   (reporta presencia y heartbeat) y consulta o recibe las órdenes pendientes. MQTT queda como alternativa
-   si el profesor lo exige (requiere instalar un broker como Mosquitto).
+1. **ESP32 con relé por WiFi (CONFIRMADO, implementado).** Cada luz se conecta a su ESP32 en *Configurar salón*,
+   de una de dos formas. `DriverSegunActuador` elige el driver por luz: las luces sin ESP32 siguen en el simulador.
+
+   | Forma | Quién llama a quién | Cuándo sirve |
+   | --- | --- | --- |
+   | **Por internet** (`DriverRemoto`) | El ESP32 llama al servidor cada 2 s: `POST /api/v1/dispositivo/latido` con `Authorization: Bearer <clave>` y `{"on": bool}`; recibe `{"orden": "on"\|"off"\|null}` | **Hosting** (el servidor no puede llegar a una IP 192.168.x.x de otra red) |
+   | **IP local** (`DriverReal` + `ClienteEsp32`) | El servidor llama a `http://IP/on`, `/off` y `/estado` | Solo con Laravel y el ESP32 en la **misma red WiFi** (p. ej. `php artisan serve` en el PC) |
+
+   - **Por internet:** `POST /actuadores/{id}/esp32/clave` genera una clave de 40 caracteres, la muestra una vez y guarda
+     solo su SHA-256. La orden queda pendiente hasta que la placa informa el estado pedido; sin confirmación en
+     `LUMICLASS_SERVO_SEGUNDOS_ESPERA` la luz queda `desconocida`. Sin latido en `LUMICLASS_ESP32_SEGUNDOS_SIN_LATIDO`
+     (15 s) la luz pasa a `inactivo` con alerta. Sketch: `firmware/lumiclass_esp32/lumiclass_esp32.ino`.
+   - **IP local:** `PATCH /actuadores/{id}/esp32 {"direccion"}` (acepta `192.168.18.187`, `http:192.168.18.187` o
+     `bombillo.local`) y `POST /actuadores/{id}/esp32/probar`. El tick consulta `/estado` cada
+     `LUMICLASS_ESP32_SEGUNDOS_SINCRONIZAR` s.
+   - En ambas, si alguien cambia el bombillo desde la página del ESP32, la app corrige el estado y lo anota en el Historial.
+   - `DELETE /actuadores/{id}/esp32` quita el ESP32 (la clave deja de servir).
+   - Pendiente: sensores PIR conectados a la placa (hoy la presencia solo viene del simulador).
 2. **Placa por USB (p. ej. Arduino sin WiFi):** un comando de Artisan lee el puerto serie con mensajes JSON por línea. La interfaz del driver no cambia.
 3. **Tiempos y fallas:**
    - Orden sin confirmar en `LUMICLASS_SERVO_SEGUNDOS_ESPERA` → evento de error, luz en `desconocida` y alerta (ya implementado en Fase 5).

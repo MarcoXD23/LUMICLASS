@@ -15,6 +15,7 @@ class ServicioTick
     public function __construct(
         private readonly ServicioLuces $luces,
         private readonly MotorReglas $motor,
+        private readonly ServicioEsp32 $esp32,
     ) {}
 
     /** @return array{omitido: bool, pendientes_revisadas: int, ordenes_reglas: int} */
@@ -30,6 +31,9 @@ class ServicioTick
         try {
             $pendientes = Actuador::query()->whereNotNull('orden_pendiente')->get();
             $pendientes->each(fn (Actuador $actuador) => $this->luces->revisarPendiente($actuador));
+
+            // Antes de las reglas: así deciden con la conexión y el estado reales de cada ESP32.
+            $this->esp32->sincronizarTodos();
 
             return [
                 'omitido' => false,

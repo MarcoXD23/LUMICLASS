@@ -10,6 +10,7 @@ use App\Models\Evento;
 use App\Models\Luz;
 use App\Models\Zona;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -110,11 +111,28 @@ class AccionamientoTest extends TestCase
         $this->getJson("/api/v1/salones/{$this->luz->zona->salon_id}/estado")->assertOk()->assertJsonPath('data.luces.encendidas', 1);
     }
 
-    public function test_driver_real_aun_no_implementado_responde_fallida(): void
+    public function test_driver_real_sin_url_responde_fallida(): void
     {
-        config(['lumiclass.driver' => 'real']);
+        config(['lumiclass.driver' => 'real', 'lumiclass.esp32.url' => '']);
 
         $this->encender()->assertOk()->assertJsonPath('resultado', 'fallida');
-        $this->assertStringContainsString('Fase 8', Actuador::first()->ultimo_resultado);
+        $this->assertStringContainsString('dirección de su ESP32', Actuador::first()->ultimo_resultado);
+    }
+
+    public function test_driver_real_confirma_cuando_el_esp32_responde(): void
+    {
+        config(['lumiclass.driver' => 'real', 'lumiclass.esp32.url' => 'http://esp32.test']);
+        Http::fake(['esp32.test/on' => Http::response(['on' => true])]);
+
+        $this->encender()->assertOk()->assertJsonPath('resultado', 'completada');
+        Http::assertSent(fn ($peticion) => $peticion->url() === 'http://esp32.test/on');
+    }
+
+    public function test_driver_real_falla_si_el_esp32_no_responde(): void
+    {
+        config(['lumiclass.driver' => 'real', 'lumiclass.esp32.url' => 'http://esp32.test']);
+        Http::fake(['esp32.test/*' => Http::response('', 500)]);
+
+        $this->encender()->assertOk()->assertJsonPath('resultado', 'fallida');
     }
 }

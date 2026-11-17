@@ -62,13 +62,21 @@
                                 <p class="font-medium" x-text="luz.nombre"></p>
                                 <span><x-insignia-luz estado="luz.estado_real" /></span>
                             </div>
+                            <p class="text-sm lg:text-xs text-slate-500" x-show="luz.actuador?.conexion_esp32"
+                                x-text="luz.actuador?.conexion_esp32 === 'internet'
+                                    ? 'ESP32 · por internet'
+                                    : `ESP32 · ${(luz.actuador?.direccion ?? '').replace(/^https?:\/\//, '')}`"></p>
 
                             <p class="mt-1 text-sm lg:text-xs text-slate-600" x-show="luz.actuador?.ocupado">
                                 Servo trabajando… esperando confirmación.
                             </p>
                             <p class="mt-1 text-sm lg:text-xs text-error-texto"
                                 x-show="luz.actuador && luz.actuador.conexion !== 'activo'"
-                                x-text="`Servo ${etiqueta('conexion', luz.actuador?.conexion).toLowerCase()}: no se puede accionar.`"></p>
+                                x-text="luz.actuador?.conexion_esp32 === 'internet'
+                                    ? 'El ESP32 no se está conectando: revisa que esté encendido y con WiFi.'
+                                    : luz.actuador?.direccion
+                                    ? 'El ESP32 no responde: revisa que esté encendido y en la misma red WiFi.'
+                                    : `Servo ${etiqueta('conexion', luz.actuador?.conexion).toLowerCase()}: no se puede accionar.`"></p>
                             <p class="mt-1 text-sm lg:text-xs text-aviso-texto"
                                 x-show="luz.estado_real === 'desconocida' && luz.actuador?.ultimo_resultado && luz.actuador.ultimo_resultado !== 'ok'"
                                 x-text="luz.actuador?.ultimo_resultado"></p>

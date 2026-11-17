@@ -56,6 +56,66 @@
                                             <x-icono nombre="borrar" clase="size-4" />
                                         </button>
                                     </div>
+                                    {{-- ESP32 de la luz. "Por internet" sirve desde el hosting (la placa llama al servidor);
+                                         "IP local" solo cuando el servidor y la placa están en la misma red WiFi (en el PC). --}}
+                                    <div x-show="luz.actuador" class="space-y-2 rounded-lg border border-slate-200 bg-white p-2">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <p class="text-sm font-medium text-slate-700 lg:text-xs">ESP32</p>
+                                            <p class="flex items-center gap-1 text-sm lg:text-xs" x-show="luz.actuador?.conexion_esp32"
+                                                :class="luz.actuador?.conexion === 'activo' ? 'text-ocupado-texto' : 'text-error-texto'">
+                                                <span class="inline-block size-2 rounded-full"
+                                                    :class="luz.actuador?.conexion === 'activo' ? 'bg-ocupado' : 'bg-error'"></span>
+                                                <span x-text="textoEsp32(luz.actuador)"></span>
+                                            </p>
+                                            <p class="text-sm text-slate-500 lg:text-xs" x-show="!luz.actuador?.conexion_esp32">Sin ESP32: usa el simulador</p>
+                                        </div>
+
+                                        {{-- Por internet --}}
+                                        <template x-if="luz.actuador?.conexion_esp32 === 'internet'">
+                                            <div class="flex flex-wrap gap-2">
+                                                <button type="button" class="btn btn-secundario min-h-11 px-3 lg:min-h-9" :disabled="trabajando"
+                                                    @click="probarEsp32(luz)">Ver estado</button>
+                                                <button type="button" class="btn btn-secundario min-h-11 px-3 lg:min-h-9" :disabled="trabajando"
+                                                    @click="generarClave(luz)">Nueva clave</button>
+                                                <button type="button" class="btn btn-secundario min-h-11 px-3 text-error-texto lg:min-h-9"
+                                                    :disabled="trabajando" @click="quitarEsp32(luz)">Quitar ESP32</button>
+                                            </div>
+                                        </template>
+
+                                        {{-- Clave recién generada: se muestra una sola vez para copiarla en el sketch. --}}
+                                        <div x-show="claves[luz.id]" x-cloak class="space-y-1 rounded-lg bg-aviso-suave p-2 text-sm text-aviso-texto lg:text-xs">
+                                            <p class="font-medium">Copia esto en el sketch del ESP32 (la clave no se vuelve a mostrar):</p>
+                                            <pre class="overflow-x-auto whitespace-pre rounded bg-white p-2 font-mono text-slate-800"
+                                                x-text="snippetClave(claves[luz.id])"></pre>
+                                            <div class="flex gap-2">
+                                                <button type="button" class="btn btn-secundario min-h-11 px-3 lg:min-h-9"
+                                                    @click="copiar(snippetClave(claves[luz.id]))">Copiar</button>
+                                                <button type="button" class="btn btn-secundario min-h-11 px-3 lg:min-h-9"
+                                                    @click="delete claves[luz.id]">Listo</button>
+                                            </div>
+                                        </div>
+
+                                        {{-- IP local --}}
+                                        <form x-show="luz.actuador?.conexion_esp32 !== 'internet'" class="space-y-1" @submit.prevent="guardarEsp32(luz)">
+                                            <label class="text-sm text-slate-600 lg:text-xs" :for="`esp32-${luz.id}`">IP en la red local (solo si la app corre en tu PC)</label>
+                                            <div class="flex gap-2">
+                                                <input :id="`esp32-${luz.id}`" class="campo lg:min-h-9" maxlength="120" inputmode="url"
+                                                    placeholder="192.168.18.187" autocomplete="off" x-model="direcciones[luz.id]">
+                                                <button type="submit" class="btn btn-secundario min-h-11 shrink-0 px-3 lg:min-h-9" :disabled="trabajando">
+                                                    Guardar
+                                                </button>
+                                                <button type="button" class="btn btn-secundario min-h-11 shrink-0 px-3 lg:min-h-9"
+                                                    x-show="luz.actuador?.direccion" :disabled="trabajando" @click="probarEsp32(luz)"
+                                                    :aria-label="`Probar conexión con el ESP32 de ${luz.nombre}`">
+                                                    Probar
+                                                </button>
+                                            </div>
+                                        </form>
+                                        <button type="button" class="btn btn-primario min-h-11 w-full lg:min-h-9"
+                                            x-show="luz.actuador?.conexion_esp32 !== 'internet'" :disabled="trabajando" @click="generarClave(luz)">
+                                            Conectar por internet (hosting)
+                                        </button>
+                                    </div>
                                     <label class="sr-only" :for="`mover-${luz.id}`" x-text="`Mover ${luz.nombre} a otra zona`"></label>
                                     <select :id="`mover-${luz.id}`" class="campo lg:min-h-9" x-show="zonas.length > 1"
                                         :disabled="trabajando" @change="moverLuz(luz, $event.target.value)">
