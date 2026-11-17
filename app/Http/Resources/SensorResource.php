@@ -16,6 +16,7 @@ class SensorResource extends JsonResource
             'zona_id' => $this->zona_id,
             'nombre' => $this->nombre,
             'tipo' => $this->tipo,
+            'numero_en_placa' => $this->numero_en_placa,
             'conexion' => $this->conexion->value,
             'presencia' => $this->presencia,
             'conteo_personas' => $this->conteo_personas,

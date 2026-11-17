@@ -7,7 +7,7 @@ export const etiquetas = {
     conexion: { activo: 'Activo', inactivo: 'Inactivo', falla: 'Falla' },
     respuestaServo: { ok: 'Responde bien', falla: 'Falla', lento: 'Lento', sin_respuesta: 'No responde' },
     severidad: { info: 'Info', advertencia: 'Advertencia', error: 'Error' },
-    origen: { usuario: 'Usuario', regla: 'Regla', sistema: 'Sistema', simulador: 'Simulador' },
+    origen: { usuario: 'Usuario', regla: 'Regla', sistema: 'Sistema', simulador: 'Simulador', placa: 'Placa' },
     evento: {
         'luz.comando': 'Orden a una luz',
         'luz.confirmada': 'Luz confirmada',
@@ -22,6 +22,7 @@ export const etiquetas = {
         'regla.creada': 'Regla creada',
         'regla.actualizada': 'Regla editada',
         'regla.eliminada': 'Regla borrada',
+        'placa.conexion': 'Conexión de la placa',
         'simulador.reinicio': 'Simulador reiniciado',
         'demo.preparada': 'Datos de ejemplo cargados',
         configuracion: 'Cambio de configuración',

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Salon extends Model
 {
@@ -45,6 +46,12 @@ class Salon extends Model
     public function actuadores(): HasMany
     {
         return $this->hasMany(Actuador::class);
+    }
+
+    /** @return HasOne<Placa, $this> */
+    public function placa(): HasOne
+    {
+        return $this->hasOne(Placa::class);
     }
 
     /** @return HasMany<Regla, $this> */

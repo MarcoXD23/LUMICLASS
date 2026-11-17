@@ -64,8 +64,13 @@ class ConfiguracionController extends Controller
     public function editarLuz(GuardarLuzRequest $request, Luz $luz): LuzResource
     {
         $destino = $request->has('zona_id') ? Zona::findOrFail($request->integer('zona_id')) : null;
+        $luz = $this->configuracion->editarLuz($luz, $request->validated('nombre'), $destino);
 
-        return LuzResource::make($this->configuracion->editarLuz($luz, $request->validated('nombre'), $destino));
+        if ($request->has('numero_servo')) {
+            $this->configuracion->cambiarNumeroServo($luz, (int) $request->validated('numero_servo'));
+        }
+
+        return LuzResource::make($luz->fresh('actuador'));
     }
 
     public function quitarLuz(Luz $luz): Response
@@ -84,7 +89,12 @@ class ConfiguracionController extends Controller
 
     public function renombrarSensor(GuardarSensorRequest $request, Sensor $sensor): SensorResource
     {
-        $this->configuracion->renombrarSensor($sensor, $request->validated('nombre'));
+        if ($request->validated('nombre') !== null) {
+            $this->configuracion->renombrarSensor($sensor, $request->validated('nombre'));
+        }
+        if ($request->has('numero_en_placa')) {
+            $this->configuracion->cambiarNumeroSensor($sensor, (int) $request->validated('numero_en_placa'));
+        }
 
         return SensorResource::make($sensor->fresh());
     }

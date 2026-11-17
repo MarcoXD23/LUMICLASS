@@ -1,6 +1,10 @@
 import { api } from '../api';
 import { avisar } from '../avisos';
 
+function rango(n) {
+    return Array.from({ length: n }, (_, i) => i + 1);
+}
+
 /** "Configurar salón": agregar, renombrar, mover y quitar zonas, luces (con su servo) y sensores. */
 export function configuracion(salonId) {
     return {
@@ -111,6 +115,26 @@ export function configuracion(salonId) {
             if (window.confirm(`¿Quitar "${luz.nombre}" y su servo? También se borran sus horas en Estadísticas.`)) {
                 this.hacer(() => api('DELETE', `/luces/${luz.id}`), 'Luz quitada.');
             }
+        },
+
+        // ---- Números en la placa (si el número ya lo usa otro, el servidor los intercambia) ----
+        /** Opciones 1…N, con N = cantidad de servos (o el número más alto en uso). */
+        get numerosServo() {
+            const servos = this.zonas.flatMap((z) => z.luces).map((l) => l.actuador).filter(Boolean);
+            return rango(Math.max(servos.length, ...servos.map((s) => s.numero_en_placa ?? 0)));
+        },
+
+        get numerosSensor() {
+            const sensores = this.zonas.flatMap((z) => z.sensores);
+            return rango(Math.max(sensores.length, ...sensores.map((s) => s.numero_en_placa ?? 0)));
+        },
+
+        cambiarNumeroServo(luz, numero) {
+            this.hacer(() => api('PATCH', `/luces/${luz.id}`, { numero_servo: Number(numero) }), `"${luz.nombre}" ahora usa el servo ${numero} de la placa.`);
+        },
+
+        cambiarNumeroSensor(sensor, numero) {
+            this.hacer(() => api('PATCH', `/sensores/${sensor.id}`, { numero_en_placa: Number(numero) }), `"${sensor.nombre}" ahora es el PIR ${numero} de la placa.`);
         },
 
         // ---- Sensores ----

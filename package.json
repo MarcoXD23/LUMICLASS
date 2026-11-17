@@ -21,7 +21,8 @@
         "@laravel/multiplex": "^0.4.1"
     },
     "dependencies": {
-        "alpinejs": "^3.17.4"
+        "alpinejs": "^3.17.4",
+        "qrcode-generator": "^1.4.4"
     },
     "overrides": {
         "shell-quote": "^1.11.0"

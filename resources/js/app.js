@@ -1,6 +1,7 @@
 import Alpine from 'alpinejs';
 import { avisar, registrarAvisos } from './avisos';
 import { configuracion } from './paginas/configuracion';
+import { conectarPlaca } from './paginas/conectarPlaca';
 import { control } from './paginas/control';
 import { casillasCodigo } from './casillasCodigo';
 import { avisoSeguridad, ingreso, olvide, recuperarCodigo, registro, restablecer, sesion } from './paginas/cuenta';
@@ -38,6 +39,7 @@ Alpine.data('salones', salones);
 Alpine.data('estadoSalon', estadoSalon);
 Alpine.data('control', control);
 Alpine.data('configuracion', configuracion);
+Alpine.data('conectarPlaca', conectarPlaca);
 Alpine.data('reglas', reglas);
 Alpine.data('historial', historial);
 Alpine.data('estadisticas', estadisticas);
