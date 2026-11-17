@@ -34,7 +34,7 @@ class CambiarContrasenaComandoTest extends TestCase
             ->expectsQuestion(self::PREGUNTA, 'nueva12345')
             ->expectsQuestion(self::REPETIR, 'nueva12345')
             ->expectsOutputToContain('Contraseña cambiada para ana@correo.com')
-            ->expectsOutputToContain('DB_CONNECTION=sqlite')
+            ->expectsOutputToContain('DB_CONNECTION='.config('database.default'))
             ->doesntExpectOutputToContain('nueva12345')
             ->assertSuccessful();
 

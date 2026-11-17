@@ -4,7 +4,8 @@
 > las preguntas de la Fase 1 (hardware, luces/zonas, login, entrega, presentación). Lo que depende del
 > hardware queda aislado detrás de la interfaz del driver, así que la simulación avanza sin esos datos.
 
-> ⚠️ **Seguridad eléctrica:** los servomotores **solo accionan el interruptor de pared de forma mecánica**
+> ⚠️ **Seguridad eléctrica:** no se toca la instalación del salón; el relé del ESP32 maneja una lámpara de bajo
+> voltaje en una maqueta (110/220 V solo con supervisión). Si se usan servos, **solo accionan el interruptor de forma mecánica**
 > (con un soporte impreso o de madera). **Nunca** se conectan a la corriente de red (110/220 V).
 > La placa y los servos usan su propia fuente de 5 V.
 
@@ -43,7 +44,7 @@
 LUMICLASS/
 ├─ app/
 │  ├─ Console/Commands/      # lumiclass:tick
-│  ├─ Drivers/               # DriverHardware + DriverSimulado + DriverReal (Fase 8)
+│  ├─ Drivers/               # DriverHardware, DriverSimulado, DriverReal (ESP32 por IP), DriverRemoto (ESP32 por internet), DriverSegunActuador
 │  ├─ Enums/                 # estados posibles: modo, luz, conexión, ocupación, orden, eventos
 │  ├─ Exceptions/            # ComandoRechazado (409)
 │  ├─ Http/
@@ -58,7 +59,7 @@ LUMICLASS/
 ├─ lang/es/                  # mensajes en español
 ├─ routes/api.php            # /api/v1/...
 ├─ tests/Feature/Api/        # pruebas de cada endpoint
-├─ firmware/                 # Fase 8, solo con hardware confirmado
+├─ firmware/                 # lumiclass_esp32: sketch del ESP32 con relé
 ├─ docs/
 └─ diseno/
 ```
@@ -76,11 +77,11 @@ salones** y puede hacer todo, pero **solo** sobre lo suyo. Un único rol (sin ad
 | `zonas`                  | id, salon_id, nombre, modo (`automatico` / `manual`)                                                           |
 | `luces`                  | id, zona_id, actuador_id (único), nombre, estado_deseado (`encendida`/`apagada`), estado_real (+ `desconocida`) |
 | `sensores`               | id, zona_id, nombre, tipo, conexion (`activo`/`inactivo`/`falla`), presencia (null = sin lectura), presencia_desde, conteo_personas?, ultima_lectura |
-| `actuadores` (servos)    | id, salon_id, nombre, conexion, ocupado, orden_pendiente, orden_iniciada_en, ultimo_resultado (`ok` o el error) |
+| `actuadores`             | id, salon_id, nombre, direccion? (IP del ESP32), clave_hash? (ESP32 por internet, SHA-256), conexion, ocupado, orden_pendiente, orden_iniciada_en, ultimo_resultado, ultima_respuesta_en, estado_reportado |
 | `reglas`                 | id, salon_id, zona_id? (null = todas las zonas de su salón), nombre, activa, prioridad (menor = primero), condicion (JSON), accion (JSON) |
 | `eventos`                | id, salon_id, tipo, origen (`usuario`/`regla`/`sistema`/`simulador`), severidad, entidad_tipo, entidad_id, mensaje, datos, created_at |
 | `solicitudes_procesadas` | user_id + id_solicitud (únicos juntos), ruta, codigo_http, respuesta: evita ejecutar dos veces la misma orden  |
-| `personal_access_tokens` | tokens de Sanctum para scripts y (Fase 8) la placa                                                             |
+| `personal_access_tokens` | tokens de Sanctum para scripts (el ESP32 usa su propia clave en `actuadores.clave_hash`)                     |
 | `cambios_luz` · `cambios_ocupacion` | desde cuándo cada luz/zona está en cada estado: base de las estadísticas (sección 5)          |
 
 - Borrar un salón borra en cascada sus zonas, luces, servos, sensores, reglas e historial. Borrar una cuenta borra sus salones.
@@ -188,10 +189,12 @@ accionar(actuador, "encender" | "apagar") → completada | pendiente | fallida
 consultarPendiente(actuador)              → completada | pendiente | fallida
 ```
 
-- `DriverSimulado`: responde según lo configurado para cada servo. `DriverReal`: llega en la Fase 8
-  (por ahora toda orden responde `fallida` con el aviso).
+- `DriverSegunActuador` elige el driver **por luz**: si el actuador tiene clave → `DriverRemoto` (ESP32 por internet);
+  si tiene `direccion` → `DriverReal` (ESP32 por IP local); si no → el de `LUMICLASS_DRIVER` (`simulado` o `real`).
+- `DriverSimulado`: responde según lo configurado para cada actuador simulado. `DriverReal`: habla con el ESP32 por su
+  IP (`/on`, `/off`, `/estado`). `DriverRemoto`: deja la orden pendiente hasta que el ESP32 la recoge en su latido.
 - Las lecturas de los sensores no pasan por el driver: entran por `ServicioSensores`, desde el simulador
-  o (Fase 8) desde la placa.
+  (los ESP32 con relé solo manejan luces; los PIR por ESP32 están pendientes).
 
 **Respuestas del servo simulado** (configurables en `.env`):
 
@@ -235,7 +238,7 @@ Un candado evita que dos ticks procesen lo mismo a la vez.
 
 **Prueba:** `php artisan test` (las pruebas de tiempo usan un reloj simulado). A mano: ver la guía de demo en el README.
 
-## 7. Integración con hardware real (PROPUESTA, Fase 8)
+## 7. Integración con hardware real (CONFIRMADO, Fase 8: ESP32 con relé)
 
 1. **ESP32 con relé por WiFi (CONFIRMADO, implementado).** Cada luz se conecta a su ESP32 en *Configurar salón*,
    de una de dos formas. `DriverSegunActuador` elige el driver por luz: las luces sin ESP32 siguen en el simulador.
@@ -255,11 +258,13 @@ Un candado evita que dos ticks procesen lo mismo a la vez.
    - En ambas, si alguien cambia el bombillo desde la página del ESP32, la app corrige el estado y lo anota en el Historial.
    - `DELETE /actuadores/{id}/esp32` quita el ESP32 (la clave deja de servir).
    - Pendiente: sensores PIR conectados a la placa (hoy la presencia solo viene del simulador).
-2. **Placa por USB (p. ej. Arduino sin WiFi):** un comando de Artisan lee el puerto serie con mensajes JSON por línea. La interfaz del driver no cambia.
-3. **Tiempos y fallas:**
-   - Orden sin confirmar en `LUMICLASS_SERVO_SEGUNDOS_ESPERA` → evento de error, luz en `desconocida` y alerta (ya implementado en Fase 5).
-   - Sin heartbeat durante 30 s → sensores y servo marcados `inactivo`.
-4. **Seguridad eléctrica:** ver el aviso al inicio de este documento.
+2. **Tiempos y fallas:**
+   - Orden sin confirmar en `LUMICLASS_SERVO_SEGUNDOS_ESPERA` → evento de error, luz en `desconocida` y alerta.
+   - ESP32 por internet sin latido en `LUMICLASS_ESP32_SEGUNDOS_SIN_LATIDO` (15 s) → `inactivo` con alerta; ESP32 por
+     IP sin respuesta en `LUMICLASS_ESP32_TIMEOUT` (2 s) → orden fallida.
+3. **Historia:** una versión anterior usaba una placa por salón con servos (commit `0a373b3`). El equipo eligió el
+   ESP32 con relé por luz; la migración `2026_11_18_000001_quitar_placa_del_salon` borra lo que dejó esa versión.
+4. **Seguridad eléctrica:** ver el aviso al inicio de este documento y `docs/HARDWARE.md`.
 
 ## 8. Pantallas (CONFIRMADO, Fase 6; diseño PROPUESTA)
 

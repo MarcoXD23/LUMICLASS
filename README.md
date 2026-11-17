@@ -2,16 +2,20 @@
 
 **Sistema inteligente de control y monitoreo de iluminación de un salón de clases.**
 
-LUMICLASS sabe si el salón está ocupado o vacío (sensores de presencia), enciende y apaga las luces moviendo el
-interruptor de pared con un servomotor, deja controlarlas a mano desde el celular o el computador, y registra todo:
-historial, alertas y estadísticas (incluidas las horas en que las luces quedaron encendidas **con el salón vacío**).
-Hoy funciona con **hardware simulado**; la integración con la placa real es la Fase 8.
+LUMICLASS sabe si el salón está ocupado o vacío (sensores de presencia), enciende y apaga las luces, deja
+controlarlas a mano desde el celular o el computador, y registra todo: historial, alertas y estadísticas (incluidas las
+horas en que las luces quedaron encendidas **con el salón vacío**).
+Cada luz puede funcionar **simulada** o con su propio **ESP32 con relé** (CONFIRMADO, diseño de Sofía), conectado por la
+red local o por internet. Los sensores de presencia todavía vienen del simulador.
+
+**Manuales:** [Manual de usuario](docs/MANUAL_USUARIO.md) · [Manual del programador](docs/MANUAL_PROGRAMADOR.md) ·
+[Hardware](docs/HARDWARE.md).
 
 **Equipo:** Camilo, Marcos y Sofía.
 
-> ⚠️ **Seguridad eléctrica:** los servomotores **solo accionan el interruptor de pared de forma mecánica** (con un
-> soporte impreso o de madera). **Nunca** se conectan a la corriente de red (110/220 V). La placa y los servos usan su
-> propia fuente de 5 V.
+> ⚠️ **Seguridad eléctrica:** no se toca la instalación eléctrica del salón. El relé del ESP32 se usa con una
+> **lámpara o tira LED de bajo voltaje (5–12 V)** en una maqueta propia. Conectar el relé a un bombillo de 110/220 V
+> solo con la supervisión de un profesor o electricista. Ver [docs/HARDWARE.md](docs/HARDWARE.md).
 
 | Celular | Computador |
 | ------- | ---------- |
@@ -37,7 +41,7 @@ azul vacío, rojo falla, naranja desconocido.
 
 ## Requisitos
 
-- [PHP](https://www.php.net/) 8.3 o superior (probado con PHP 8.4 en Windows 11) y [Composer](https://getcomposer.org/) 2.
+- [PHP](https://www.php.net/) **8.4** o superior (Symfony 8 lo exige; probado en Windows 11) y [Composer](https://getcomposer.org/) 2.
 - [Node.js](https://nodejs.org/) 20 o superior (para compilar la interfaz).
 - Git. Opcional: MySQL (por ejemplo el de WAMP); si no, se usa SQLite, que no requiere instalar nada.
 
@@ -116,8 +120,8 @@ Por defecto usa **SQLite** (un archivo dentro del proyecto). Para **MySQL de WAM
 
 Si el hosting no permite `php artisan migrate`, los cambios de base de datos de cada versión están en
 `database/sql/`. En **phpMyAdmin** → tu base → pestaña **SQL** → pega el archivo → **Continuar**, una sola vez.
-`cambios_hosting.sql` agrega el correo alternativo y la tabla `codigos_verificacion` (solo estructura, no borra
-datos). Luego sube por FileZilla las carpetas cambiadas y `public/build` (compilado con `npm run build`).
+`cambios_hosting.sql` agrega el correo alternativo y la tabla `codigos_verificacion`, y luego `esp32_sofia.sql`
+agrega las columnas del ESP32 de cada luz (solo estructura, no borran datos; cada uno una sola vez y en ese orden). Luego sube por FileZilla las carpetas cambiadas y `public/build` (compilado con `npm run build`).
 
 ### Conectar el ESP32 (bombillo con relé)
 
@@ -226,8 +230,8 @@ routes/      Rutas web y de la API (/api/v1)
 database/    Migraciones y seeders
 resources/   Vistas (Blade), estilos (Tailwind) y JavaScript (Alpine)
 tests/       Pruebas: Feature (PHP), js (Vitest), navegador (Edge/Chrome)
-firmware/    Código de la placa (Fase 8)
-docs/        Arquitectura, pruebas, guía de demo y guion de pruebas
+firmware/    Sketch del ESP32 con relé (firmware/lumiclass_esp32)
+docs/        Manuales, arquitectura, hardware, pruebas, guía de demo y guion de pruebas
 diseno/      Referencia de Figma (vacía: el diseño actual es propio, PROPUESTA)
 ```
 
@@ -236,5 +240,5 @@ Reglas de trabajo del equipo: [CLAUDE.md](CLAUDE.md).
 
 Construido con [Laravel](https://laravel.com) (licencia MIT), Alpine.js y Tailwind CSS.
 
-**Estado:** Fases 1–7, 9 y 10 completadas. Pendiente: Fase 8 (hardware real), cuando se confirmen la placa, los
-sensores y los servos.
+**Estado:** Fases 1–10 completadas. La Fase 8 (hardware real) es el ESP32 con relé por luz. Pendiente: sensores PIR
+conectados a un ESP32 (hoy la presencia viene del simulador).
